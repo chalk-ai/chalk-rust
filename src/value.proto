@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package chalk.protos;
+
+// A snazzy new shirt!
+message value {
+    oneof val {
+        bytes bytes_val = 1;
+        string string_val = 2;
+        int32 int32_val = 3;
+        int64 int64_val = 4;
+        double double_val = 5;
+        float float_val = 6;
+        bool bool_val = 7;
+        int64 unix_timestamp_val = 8;
+        BytesList bytes_list_val = 11;
+        StringList string_list_val = 12;
+        Int32List int32_list_val = 13;
+        Int64List int64_list_val = 14;
+        DoubleList double_list_val = 15;
+        FloatList float_list_val = 16;
+        BoolList bool_list_val = 17;
+        Int64List unix_timestamp_list_val = 18;
+        Null null_val = 19;
+    }
+}
+
+enum Null {
+    NULL = 0;
+}
+
+message BytesList {
+    repeated bytes val = 1;
+}
+
+message StringList {
+    repeated string val = 1;
+}
+
+message Int32List {
+    repeated int32 val = 1;
+}
+
+message Int64List {
+    repeated int64 val = 1;
+}
+
+message DoubleList {
+    repeated double val = 1;
+}
+
+message FloatList {
+    repeated float val = 1;
+}
+
+message BoolList {
+    repeated bool val = 1;
+}
+
+// This is to avoid an issue of being unable to specify `repeated value` in oneofs or maps
+// In JSON "val" field can be omitted
+message RepeatedValue {
+    repeated value val = 1;
+}

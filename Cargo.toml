@@ -12,9 +12,24 @@ redis = {version="*", features=["tokio-comp"]}
 sqlx = { version = "0.6.3", features = ["postgres", "runtime-tokio-rustls" ] }
 arrow = { version = "*" }
 polars = { version = "*" }
-opentelemetry = { version = "*", features = ["rt-tokio"] }
-opentelemetry-datadog = "*"
+cxx = "1.0"
+serde_json = "1.0.108"
+serde = "1.0.192"
+flate2 = "1.0.28"
+prost = "0.12"
+itoa = "1.0.9"
+time = "0.3.30"
+rayon = "1.8.0"
 
+
+
+[build-dependencies]
+cxx-build = "1.0"
+prost-build = { version = "0.12" }
 
 [build]
 rustflags = ["--cfg", "tokio_unstable"]
+
+[[bin]]
+name = "script"
+path = "src/scripts/bin/redis_scan.rs"

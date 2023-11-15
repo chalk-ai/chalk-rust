@@ -3,7 +3,6 @@ use std::{env, ffi::OsStr};
 
 use redis::Commands;
 
-
 #[tokio::main]
 async fn main() {
     let app = Router::new().route("/", get(|| async {
