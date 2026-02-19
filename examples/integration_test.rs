@@ -201,7 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 7: gRPC online query (different user)
     println!("\n=== Test 7: gRPC Online Query (user.id=2) ===");
     let grpc_response2 = grpc_client
-        .query(OnlineQueryRequest {
+        .query_proto(OnlineQueryRequest {
             inputs: HashMap::from([(
                 "user.id".to_string(),
                 prost_types::Value {
@@ -234,7 +234,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let grpc_bulk_feather = serialize_to_feather(&grpc_bulk_batch)?;
     let grpc_bulk_response = grpc_client
-        .query_bulk(OnlineQueryBulkRequest {
+        .query_bulk_proto(OnlineQueryBulkRequest {
             inputs: Some(
                 chalk_rs::gen::chalk::common::v1::online_query_bulk_request::Inputs::InputsFeather(
                     grpc_bulk_feather,
@@ -277,7 +277,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let upload_feather = serialize_to_feather(&upload_batch)?;
     let grpc_upload_response = grpc_client
-        .upload_features(UploadFeaturesBulkRequest {
+        .upload_features_proto(UploadFeaturesBulkRequest {
             inputs_feather: upload_feather,
             ..Default::default()
         })
@@ -312,7 +312,7 @@ async fn retry_grpc(
 ) -> Result<chalk_rs::gen::chalk::common::v1::OnlineQueryResponse, Box<dyn std::error::Error>> {
     let mut last_err = None;
     for attempt in 0..3 {
-        match client.query(request.clone()).await {
+        match client.query_proto(request.clone()).await {
             Ok(resp) => return Ok(resp),
             Err(e) => {
                 println!("  attempt {} failed: {}, retrying...", attempt + 1, e);

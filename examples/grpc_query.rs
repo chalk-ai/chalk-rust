@@ -36,7 +36,7 @@ async fn main() -> chalk_rs::error::Result<()> {
         ..Default::default()
     };
 
-    let response = client.query(request).await?;
+    let response = client.query_proto(request).await?;
 
     if let Some(data) = &response.data {
         for result in &data.results {

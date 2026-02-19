@@ -23,9 +23,10 @@ const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 /// that uses gRPC (HTTP/2 + Protocol Buffers) instead of REST/JSON for lower
 /// latency and higher throughput.
 ///
-/// Supports [`query`](Self::query), [`query_bulk`](Self::query_bulk), and
-/// [`upload_features`](Self::upload_features). Offline queries are only
-/// available via the REST client.
+/// Supports [`query_proto`](Self::query_proto), [`query_bulk_proto`](Self::query_bulk_proto),
+/// and [`upload_features_proto`](Self::upload_features_proto). These are
+/// low-level methods that accept raw protobuf types. Offline queries are
+/// only available via the REST client.
 ///
 /// # Example
 ///
@@ -57,7 +58,7 @@ const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 ///     ..Default::default()
 /// };
 ///
-/// let response = client.query(request).await?;
+/// let response = client.query_proto(request).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -192,10 +193,12 @@ impl ChalkGrpcClientBuilder {
 }
 
 impl ChalkGrpcClient {
-    /// Computes feature values for a single entity using online resolvers.
+    /// Low-level: computes feature values for a single entity using the raw
+    /// protobuf request/response types.
     ///
-    /// See <https://docs.chalk.ai/docs/query-basics> for more information.
-    pub async fn query(
+    /// Prefer a higher-level wrapper (when available) over constructing proto
+    /// messages by hand. See <https://docs.chalk.ai/docs/query-basics>.
+    pub async fn query_proto(
         &self,
         request: ProtoOnlineQueryRequest,
     ) -> Result<ProtoOnlineQueryResponse> {
@@ -206,10 +209,12 @@ impl ChalkGrpcClient {
         Ok(response.into_inner())
     }
 
-    /// Computes feature values for multiple entities at once using online resolvers.
+    /// Low-level: computes feature values for multiple entities at once using
+    /// the raw protobuf request/response types.
     ///
-    /// Inputs and outputs use Arrow IPC (Feather) encoding inside the proto messages.
-    pub async fn query_bulk(
+    /// Inputs and outputs use Arrow IPC (Feather) encoding inside the proto
+    /// messages.
+    pub async fn query_bulk_proto(
         &self,
         request: ProtoOnlineQueryBulkRequest,
     ) -> Result<ProtoOnlineQueryBulkResponse> {
@@ -220,8 +225,9 @@ impl ChalkGrpcClient {
         Ok(response.into_inner())
     }
 
-    /// Uploads pre-computed feature values to the Chalk feature store.
-    pub async fn upload_features(
+    /// Low-level: uploads pre-computed feature values using the raw protobuf
+    /// request/response types.
+    pub async fn upload_features_proto(
         &self,
         request: ProtoUploadFeaturesBulkRequest,
     ) -> Result<ProtoUploadFeaturesBulkResponse> {
