@@ -1,0 +1,585 @@
+syntax = "proto3";
+
+package chalk.expression.v1;
+
+import "chalk/arrow/v1/arrow.proto";
+
+message Identifier {
+  string name = 1;
+}
+
+message TypedIdentifier {
+  string name = 1;
+  optional chalk.arrow.v1.ArrowType type = 2;
+}
+
+// A field-access expression, like `arr.length`.
+message ExprGetAttribute {
+  LogicalExprNode parent = 1;
+  Identifier attribute = 2;
+}
+
+// A key-lookup expression, like `hash[name]` or `matrix[r, c]`.
+message ExprGetSubscript {
+  LogicalExprNode parent = 1;
+  repeated LogicalExprNode subscript = 2;
+}
+
+// A function call, like `abs(x)` or `arr.indexof(6)` or `a + b`.
+//
+// In function calls, like `abs(x)`, the `func` will be an identifier with the
+// specified name.
+//
+// In method calls, like `arr.indexof(6)`, the `func` will be a get-attribute
+// expression.
+//
+// In operator expressions, the `func` will be an identifier with the operator
+// as its name e.g. `"+"`.
+message ExprCall {
+  LogicalExprNode func = 1;
+  repeated LogicalExprNode args = 2;
+  map<string, LogicalExprNode> kwargs = 3;
+  optional string repr_override = 4;
+}
+
+// A literal expression.
+message ExprLiteral {
+  chalk.arrow.v1.ScalarValue value = 1;
+
+  // All Python literal values are encoded as arrow scalar values.
+  // - If this bool is `False`, then the decoded value was originally a plain
+  // Python value.
+  // - If this bool is `True`, then the decoded value should be a
+  // `pyarrow.Scalar` value.
+  bool is_arrow_scalar_object = 2;
+}
+
+message LogicalExprNode {
+  // Each expression has a form, which is one of the following.
+  //
+  // These forms are deliberately purely syntactic - additional semantic
+  // information, like types, are dependent on the feature graph, which may
+  // therefore be out-of-date when decoding an expression message.
+  //
+  // Consumers must always perform additional parsing and validation, so
+  // semantic information should not be stored in the proto message itself.
+  oneof expr_form {
+    Identifier identifier = 35;
+    ExprGetAttribute get_attribute = 36;
+    ExprGetSubscript get_subscript = 37;
+    ExprCall call = 38;
+    ExprLiteral literal_value = 39;
+    TypedIdentifier typed_identifier = 41;
+  }
+  string expr_id = 40; // The memory ID of this node. Nodes with equal id share are *identical*, sharing any nondeterminism and mutations.
+
+  // All of these expression forms are deprecated.
+  // A simpler syntactic representation is used now.
+  oneof expr_type {
+    // column references
+    Column column = 1 [deprecated = true];
+
+    // alias
+    AliasNode alias = 2 [deprecated = true];
+
+    chalk.arrow.v1.ScalarValue literal = 3 [deprecated = true];
+
+    // binary expressions
+    BinaryExprNode binary_expr = 4 [deprecated = true];
+
+    // aggregate expressions
+    AggregateExprNode aggregate_expr = 5 [deprecated = true];
+
+    // null checks
+    IsNull is_null_expr = 6 [deprecated = true];
+    IsNotNull is_not_null_expr = 7 [deprecated = true];
+    Not not_expr = 8 [deprecated = true];
+
+    BetweenNode between = 9 [deprecated = true];
+    CaseNode case = 10 [deprecated = true];
+    CastNode cast = 11 [deprecated = true];
+    SortExprNode sort = 12 [deprecated = true];
+    NegativeNode negative = 13 [deprecated = true];
+    InListNode in_list = 14 [deprecated = true];
+    Wildcard wildcard = 15 [deprecated = true];
+    ScalarFunctionNode scalar_function = 16 [deprecated = true];
+    TryCastNode try_cast = 17 [deprecated = true];
+
+    // window expressions
+    WindowExprNode window_expr = 18 [deprecated = true];
+
+    // AggregateUDF expressions
+    AggregateUDFExprNode aggregate_udf_expr = 19 [deprecated = true];
+
+    // Scalar UDF expressions
+    ScalarUDFExprNode scalar_udf_expr = 20 [deprecated = true];
+
+    GetIndexedField get_indexed_field = 21 [deprecated = true];
+
+    GroupingSetNode grouping_set = 22 [deprecated = true];
+
+    CubeNode cube = 23 [deprecated = true];
+
+    RollupNode rollup = 24 [deprecated = true];
+
+    IsTrue is_true = 25 [deprecated = true];
+    IsFalse is_false = 26 [deprecated = true];
+    IsUnknown is_unknown = 27 [deprecated = true];
+    IsNotTrue is_not_true = 28 [deprecated = true];
+    IsNotFalse is_not_false = 29 [deprecated = true];
+    IsNotUnknown is_not_unknown = 30 [deprecated = true];
+    LikeNode like = 31 [deprecated = true];
+    ILikeNode ilike = 32 [deprecated = true];
+    SimilarToNode similar_to = 33 [deprecated = true];
+
+    PlaceholderNode placeholder = 34 [deprecated = true];
+  }
+}
+
+message ColumnRelation {
+  string relation = 1;
+}
+
+message Column {
+  string name = 1;
+  ColumnRelation relation = 2;
+}
+
+message Wildcard {
+  optional string qualifier = 1;
+}
+
+message PlaceholderNode {
+  string id = 1;
+  chalk.arrow.v1.ArrowType data_type = 2;
+}
+
+message LogicalExprList {
+  repeated LogicalExprNode expr = 1;
+}
+
+message GroupingSetNode {
+  repeated LogicalExprList expr = 1;
+}
+
+message CubeNode {
+  repeated LogicalExprNode expr = 1;
+}
+
+message RollupNode {
+  repeated LogicalExprNode expr = 1;
+}
+
+message NamedStructField {
+  chalk.arrow.v1.ScalarValue name = 1;
+}
+
+message ListIndex {
+  LogicalExprNode key = 1;
+}
+
+message ListRange {
+  LogicalExprNode start = 1;
+  LogicalExprNode stop = 2;
+}
+
+message GetIndexedField {
+  LogicalExprNode expr = 1;
+  oneof field {
+    NamedStructField named_struct_field = 2;
+    ListIndex list_index = 3;
+    ListRange list_range = 4;
+  }
+}
+
+message IsNull {
+  LogicalExprNode expr = 1;
+}
+
+message IsNotNull {
+  LogicalExprNode expr = 1;
+}
+
+message IsTrue {
+  LogicalExprNode expr = 1;
+}
+
+message IsFalse {
+  LogicalExprNode expr = 1;
+}
+
+message IsUnknown {
+  LogicalExprNode expr = 1;
+}
+
+message IsNotTrue {
+  LogicalExprNode expr = 1;
+}
+
+message IsNotFalse {
+  LogicalExprNode expr = 1;
+}
+
+message IsNotUnknown {
+  LogicalExprNode expr = 1;
+}
+
+message Not {
+  LogicalExprNode expr = 1;
+}
+
+message AliasNode {
+  LogicalExprNode expr = 1;
+  string alias = 2;
+  repeated OwnedTableReference relation = 3;
+}
+
+message BareTableReference {
+  string table = 1;
+}
+
+message PartialTableReference {
+  string schema = 1;
+  string table = 2;
+}
+
+message FullTableReference {
+  string catalog = 1;
+  string schema = 2;
+  string table = 3;
+}
+
+message OwnedTableReference {
+  oneof table_reference_enum {
+    BareTableReference bare = 1;
+    PartialTableReference partial = 2;
+    FullTableReference full = 3;
+  }
+}
+
+message BinaryExprNode {
+  // Represents the operands from the left inner most expression
+  // to the right outer most expression where each of them are chained
+  // with the operator 'op'.
+  repeated LogicalExprNode operands = 1;
+  string op = 3;
+}
+
+message NegativeNode {
+  LogicalExprNode expr = 1;
+}
+
+message InListNode {
+  LogicalExprNode expr = 1;
+  repeated LogicalExprNode list = 2;
+  bool negated = 3;
+}
+
+enum ScalarFunction {
+  SCALAR_FUNCTION_UNSPECIFIED = 0;
+  SCALAR_FUNCTION_ABS = 1;
+  SCALAR_FUNCTION_ACOS = 2;
+  SCALAR_FUNCTION_ASIN = 3;
+  SCALAR_FUNCTION_ATAN = 4;
+  SCALAR_FUNCTION_ASCII = 5;
+  SCALAR_FUNCTION_CEIL = 6;
+  SCALAR_FUNCTION_COS = 7;
+  SCALAR_FUNCTION_DIGEST = 8;
+  SCALAR_FUNCTION_EXP = 9;
+  SCALAR_FUNCTION_FLOOR = 10;
+  SCALAR_FUNCTION_LN = 11;
+  SCALAR_FUNCTION_LOG = 12;
+  SCALAR_FUNCTION_LOG10 = 13;
+  SCALAR_FUNCTION_LOG2 = 14;
+  SCALAR_FUNCTION_ROUND = 15;
+  SCALAR_FUNCTION_SIGNUM = 16;
+  SCALAR_FUNCTION_SIN = 17;
+  SCALAR_FUNCTION_SQRT = 18;
+  SCALAR_FUNCTION_TAN = 19;
+  SCALAR_FUNCTION_TRUNC = 20;
+  SCALAR_FUNCTION_ARRAY = 21;
+  SCALAR_FUNCTION_REGEXP_MATCH = 22;
+  SCALAR_FUNCTION_BIT_LENGTH = 23;
+  SCALAR_FUNCTION_BTRIM = 24;
+  SCALAR_FUNCTION_CHARACTER_LENGTH = 25;
+  SCALAR_FUNCTION_CHR = 26;
+  SCALAR_FUNCTION_CONCAT = 27;
+  SCALAR_FUNCTION_CONCAT_WITH_SEPARATOR = 28;
+  SCALAR_FUNCTION_DATE_PART = 29;
+  SCALAR_FUNCTION_DATE_TRUNC = 30;
+  SCALAR_FUNCTION_INIT_CAP = 31;
+  SCALAR_FUNCTION_LEFT = 32;
+  SCALAR_FUNCTION_LPAD = 33;
+  SCALAR_FUNCTION_LOWER = 34;
+  SCALAR_FUNCTION_LTRIM = 35;
+  SCALAR_FUNCTION_MD5 = 36;
+  SCALAR_FUNCTION_NULL_IF = 37;
+  SCALAR_FUNCTION_OCTET_LENGTH = 38;
+  SCALAR_FUNCTION_RANDOM = 39;
+  SCALAR_FUNCTION_REGEXP_REPLACE = 40;
+  SCALAR_FUNCTION_REPEAT = 41;
+  SCALAR_FUNCTION_REPLACE = 42;
+  SCALAR_FUNCTION_REVERSE = 43;
+  SCALAR_FUNCTION_RIGHT = 44;
+  SCALAR_FUNCTION_RPAD = 45;
+  SCALAR_FUNCTION_RTRIM = 46;
+  SCALAR_FUNCTION_SHA224 = 47;
+  SCALAR_FUNCTION_SHA256 = 48;
+  SCALAR_FUNCTION_SHA384 = 49;
+  SCALAR_FUNCTION_SHA512 = 50;
+  SCALAR_FUNCTION_SPLIT_PART = 51;
+  SCALAR_FUNCTION_STARTS_WITH = 52;
+  SCALAR_FUNCTION_STRPOS = 53;
+  SCALAR_FUNCTION_SUBSTR = 54;
+  SCALAR_FUNCTION_TO_HEX = 55;
+  SCALAR_FUNCTION_TO_TIMESTAMP = 56;
+  SCALAR_FUNCTION_TO_TIMESTAMP_MILLIS = 57;
+  SCALAR_FUNCTION_TO_TIMESTAMP_MICROS = 58;
+  SCALAR_FUNCTION_TO_TIMESTAMP_SECONDS = 59;
+  SCALAR_FUNCTION_NOW = 60;
+  SCALAR_FUNCTION_TRANSLATE = 61;
+  SCALAR_FUNCTION_TRIM = 62;
+  SCALAR_FUNCTION_UPPER = 63;
+  SCALAR_FUNCTION_COALESCE = 64;
+  SCALAR_FUNCTION_POWER = 65;
+  SCALAR_FUNCTION_STRUCT_FUN = 66;
+  SCALAR_FUNCTION_FROM_UNIXTIME = 67;
+  SCALAR_FUNCTION_ATAN2 = 68;
+  SCALAR_FUNCTION_DATE_BIN = 69;
+  SCALAR_FUNCTION_ARROW_TYPEOF = 70;
+  SCALAR_FUNCTION_CURRENT_DATE = 71;
+  SCALAR_FUNCTION_CURRENT_TIME = 72;
+  SCALAR_FUNCTION_UUID = 73;
+  SCALAR_FUNCTION_CBRT = 74;
+  SCALAR_FUNCTION_ACOSH = 75;
+  SCALAR_FUNCTION_ASINH = 76;
+  SCALAR_FUNCTION_ATANH = 77;
+  SCALAR_FUNCTION_SINH = 78;
+  SCALAR_FUNCTION_COSH = 79;
+  SCALAR_FUNCTION_TANH = 80;
+  SCALAR_FUNCTION_PI = 81;
+  SCALAR_FUNCTION_DEGREES = 82;
+  SCALAR_FUNCTION_RADIANS = 83;
+  SCALAR_FUNCTION_FACTORIAL = 84;
+  SCALAR_FUNCTION_LCM = 85;
+  SCALAR_FUNCTION_GCD = 86;
+  SCALAR_FUNCTION_ARRAY_APPEND = 87;
+  SCALAR_FUNCTION_ARRAY_CONCAT = 88;
+  SCALAR_FUNCTION_ARRAY_DIMS = 89;
+  SCALAR_FUNCTION_ARRAY_REPEAT = 90;
+  SCALAR_FUNCTION_ARRAY_LENGTH = 91;
+  SCALAR_FUNCTION_ARRAY_NDIMS = 92;
+  SCALAR_FUNCTION_ARRAY_POSITION = 93;
+  SCALAR_FUNCTION_ARRAY_POSITIONS = 94;
+  SCALAR_FUNCTION_ARRAY_PREPEND = 95;
+  SCALAR_FUNCTION_ARRAY_REMOVE = 96;
+  SCALAR_FUNCTION_ARRAY_REPLACE = 97;
+  SCALAR_FUNCTION_ARRAY_TO_STRING = 98;
+  SCALAR_FUNCTION_CARDINALITY = 99;
+  SCALAR_FUNCTION_ARRAY_ELEMENT = 100;
+  SCALAR_FUNCTION_ARRAY_SLICE = 101;
+  SCALAR_FUNCTION_ENCODE = 102;
+  SCALAR_FUNCTION_DECODE = 103;
+  SCALAR_FUNCTION_COT = 104;
+  SCALAR_FUNCTION_ARRAY_HAS = 105;
+  SCALAR_FUNCTION_ARRAY_HAS_ANY = 106;
+  SCALAR_FUNCTION_ARRAY_HAS_ALL = 107;
+  SCALAR_FUNCTION_ARRAY_REMOVE_N = 108;
+  SCALAR_FUNCTION_ARRAY_REPLACE_N = 109;
+  SCALAR_FUNCTION_ARRAY_REMOVE_ALL = 110;
+  SCALAR_FUNCTION_ARRAY_REPLACE_ALL = 111;
+  SCALAR_FUNCTION_NANVL = 112;
+  SCALAR_FUNCTION_FLATTEN = 113;
+  SCALAR_FUNCTION_ISNAN = 114;
+  SCALAR_FUNCTION_ISZERO = 115;
+  SCALAR_FUNCTION_ARRAY_EMPTY = 116;
+  SCALAR_FUNCTION_ARRAY_POP_BACK = 117;
+  SCALAR_FUNCTION_STRING_TO_ARRAY = 118;
+  SCALAR_FUNCTION_TO_TIMESTAMP_NANOS = 119;
+  SCALAR_FUNCTION_ARRAY_INTERSECT = 120;
+  SCALAR_FUNCTION_ARRAY_UNION = 121;
+  SCALAR_FUNCTION_OVER_LAY = 122;
+  SCALAR_FUNCTION_RANGE = 123;
+  SCALAR_FUNCTION_ARRAY_EXCEPT = 124;
+  SCALAR_FUNCTION_ARRAY_POP_FRONT = 125;
+  SCALAR_FUNCTION_LEVENSHTEIN = 126;
+  SCALAR_FUNCTION_SUBSTR_INDEX = 127;
+  SCALAR_FUNCTION_FIND_IN_SET = 128;
+  SCALAR_FUNCTION_ARRAY_SORT = 129;
+  SCALAR_FUNCTION_ARRAY_DISTINCT = 130;
+}
+
+message ScalarFunctionNode {
+  ScalarFunction fun = 1;
+  repeated LogicalExprNode args = 2;
+}
+
+enum AggregateFunction {
+  AGGREGATE_FUNCTION_UNSPECIFIED = 0;
+  AGGREGATE_FUNCTION_MIN = 1;
+  AGGREGATE_FUNCTION_MAX = 2;
+  AGGREGATE_FUNCTION_SUM = 3;
+  AGGREGATE_FUNCTION_AVG = 4;
+  AGGREGATE_FUNCTION_COUNT = 5;
+  AGGREGATE_FUNCTION_APPROX_DISTINCT = 6;
+  AGGREGATE_FUNCTION_ARRAY = 7;
+  AGGREGATE_FUNCTION_VARIANCE = 8;
+  AGGREGATE_FUNCTION_VARIANCE_POP = 9;
+  AGGREGATE_FUNCTION_COVARIANCE = 10;
+  AGGREGATE_FUNCTION_COVARIANCE_POP = 11;
+  AGGREGATE_FUNCTION_STDDEV = 12;
+  AGGREGATE_FUNCTION_STDDEV_POP = 13;
+  AGGREGATE_FUNCTION_CORRELATION = 14;
+  AGGREGATE_FUNCTION_APPROX_PERCENTILE_CONT = 15;
+  AGGREGATE_FUNCTION_APPROX_MEDIAN = 16;
+  AGGREGATE_FUNCTION_APPROX_PERCENTILE_CONT_WITH_WEIGHT = 17;
+  AGGREGATE_FUNCTION_GROUPING = 18;
+  AGGREGATE_FUNCTION_MEDIAN = 19;
+  AGGREGATE_FUNCTION_BIT_AND = 20;
+  AGGREGATE_FUNCTION_BIT_OR = 21;
+  AGGREGATE_FUNCTION_BIT_XOR = 22;
+  AGGREGATE_FUNCTION_BOOL_AND = 23;
+  AGGREGATE_FUNCTION_BOOL_OR = 24;
+  AGGREGATE_FUNCTION_FIRST_VALUE = 25;
+  AGGREGATE_FUNCTION_LAST_VALUE = 26;
+  AGGREGATE_FUNCTION_REGR_SLOPE = 27;
+  AGGREGATE_FUNCTION_REGR_INTERCEPT = 28;
+  AGGREGATE_FUNCTION_REGR_COUNT = 29;
+  AGGREGATE_FUNCTION_REGR_R2 = 30;
+  AGGREGATE_FUNCTION_REGR_AVGX = 31;
+  AGGREGATE_FUNCTION_REGR_AVGY = 32;
+  AGGREGATE_FUNCTION_REGR_SXX = 33;
+  AGGREGATE_FUNCTION_REGR_SYY = 34;
+  AGGREGATE_FUNCTION_REGR_SXY = 35;
+  AGGREGATE_FUNCTION_STRING = 36;
+}
+
+message AggregateExprNode {
+  AggregateFunction aggr_function = 1;
+  repeated LogicalExprNode expr = 2;
+  bool distinct = 3;
+  LogicalExprNode filter = 4;
+  repeated LogicalExprNode order_by = 5;
+}
+
+message AggregateUDFExprNode {
+  string fun_name = 1;
+  repeated LogicalExprNode args = 2;
+  LogicalExprNode filter = 3;
+  repeated LogicalExprNode order_by = 4;
+  map<string, LogicalExprNode> kwargs = 5;
+}
+
+message ScalarUDFExprNode {
+  string fun_name = 1;
+  repeated LogicalExprNode args = 2;
+}
+
+enum BuiltInWindowFunction {
+  BUILT_IN_WINDOW_FUNCTION_UNSPECIFIED = 0;
+  BUILT_IN_WINDOW_FUNCTION_ROW_NUMBER = 1;
+  BUILT_IN_WINDOW_FUNCTION_RANK = 2;
+  BUILT_IN_WINDOW_FUNCTION_DENSE_RANK = 3;
+  BUILT_IN_WINDOW_FUNCTION_PERCENT_RANK = 4;
+  BUILT_IN_WINDOW_FUNCTION_CUME_DIST = 5;
+  BUILT_IN_WINDOW_FUNCTION_NTILE = 6;
+  BUILT_IN_WINDOW_FUNCTION_LAG = 7;
+  BUILT_IN_WINDOW_FUNCTION_LEAD = 8;
+  BUILT_IN_WINDOW_FUNCTION_FIRST_VALUE = 9;
+  BUILT_IN_WINDOW_FUNCTION_LAST_VALUE = 10;
+  BUILT_IN_WINDOW_FUNCTION_NTH_VALUE = 11;
+}
+
+message WindowExprNode {
+  oneof window_function {
+    AggregateFunction aggr_function = 1;
+    BuiltInWindowFunction built_in_function = 2;
+    string udaf = 3;
+    string udwf = 9;
+  }
+  LogicalExprNode expr = 4;
+  repeated LogicalExprNode partition_by = 5;
+  repeated LogicalExprNode order_by = 6;
+  // repeated LogicalExprNode filter = 7;
+  WindowFrame window_frame = 8;
+}
+
+message BetweenNode {
+  LogicalExprNode expr = 1;
+  bool negated = 2;
+  LogicalExprNode low = 3;
+  LogicalExprNode high = 4;
+}
+
+message LikeNode {
+  bool negated = 1;
+  LogicalExprNode expr = 2;
+  LogicalExprNode pattern = 3;
+  string escape_char = 4;
+}
+
+message ILikeNode {
+  bool negated = 1;
+  LogicalExprNode expr = 2;
+  LogicalExprNode pattern = 3;
+  string escape_char = 4;
+}
+
+message SimilarToNode {
+  bool negated = 1;
+  LogicalExprNode expr = 2;
+  LogicalExprNode pattern = 3;
+  string escape_char = 4;
+}
+
+message CaseNode {
+  LogicalExprNode expr = 1;
+  repeated WhenThen when_then_expr = 2;
+  LogicalExprNode else_expr = 3;
+}
+
+message WhenThen {
+  LogicalExprNode when_expr = 1;
+  LogicalExprNode then_expr = 2;
+}
+
+message CastNode {
+  LogicalExprNode expr = 1;
+  chalk.arrow.v1.ArrowType arrow_type = 2;
+}
+
+message TryCastNode {
+  LogicalExprNode expr = 1;
+  chalk.arrow.v1.ArrowType arrow_type = 2;
+}
+
+message SortExprNode {
+  LogicalExprNode expr = 1;
+  bool asc = 2;
+  bool nulls_first = 3;
+}
+
+enum WindowFrameUnits {
+  WINDOW_FRAME_UNITS_UNSPECIFIED = 0;
+  WINDOW_FRAME_UNITS_ROWS = 1;
+  WINDOW_FRAME_UNITS_RANGE = 2;
+  WINDOW_FRAME_UNITS_GROUPS = 3;
+}
+
+message WindowFrame {
+  WindowFrameUnits window_frame_units = 1;
+  WindowFrameBound start_bound = 2;
+  optional WindowFrameBound bound = 3;
+}
+
+enum WindowFrameBoundType {
+  WINDOW_FRAME_BOUND_TYPE_UNSPECIFIED = 0;
+  WINDOW_FRAME_BOUND_TYPE_CURRENT_ROW = 1;
+  WINDOW_FRAME_BOUND_TYPE_PRECEDING = 2;
+  WINDOW_FRAME_BOUND_TYPE_FOLLOWING = 3;
+}
+
+message WindowFrameBound {
+  WindowFrameBoundType window_frame_bound_type = 1;
+  chalk.arrow.v1.ScalarValue bound_value = 2;
+}

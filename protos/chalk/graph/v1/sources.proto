@@ -1,0 +1,268 @@
+syntax = "proto3";
+
+package chalk.graph.v1;
+
+import "chalk/arrow/v1/arrow.proto";
+import "google/protobuf/duration.proto";
+
+enum StreamSourceType {
+  STREAM_SOURCE_TYPE_UNSPECIFIED = 0;
+  STREAM_SOURCE_TYPE_KAFKA = 1;
+  STREAM_SOURCE_TYPE_KINESIS = 2;
+  STREAM_SOURCE_TYPE_PUBSUB = 3;
+}
+
+message StreamSourceReference {
+  StreamSourceType type = 1;
+  string name = 2;
+}
+
+message StreamSource {
+  oneof source {
+    KafkaSource kafka = 1;
+    KinesisSource kinesis = 2;
+    PubSubSource pubsub = 3;
+  }
+}
+
+message KinesisSource {
+  string name = 1;
+  string stream_name = 2;
+  string stream_arn = 3;
+  string region_name = 4;
+  google.protobuf.Duration late_arrival_deadline = 5;
+  string dead_letter_queue_stream_name = 6;
+  string aws_access_key_id = 7;
+  string aws_secret_access_key = 8;
+  string aws_session_token = 9;
+  string endpoint_url = 10;
+  string consumer_role_arn = 11;
+  string enhanced_fanout_consumer_name = 12;
+}
+
+message KafkaSource {
+  string name = 1;
+  repeated string bootstrap_servers = 2;
+  string topic = 3;
+  string ssl_keystore_location = 4;
+  string ssl_ca_file = 5;
+  string client_id_prefix = 6;
+  string group_id_prefix = 7;
+  string security_protocol = 8;
+  string sasl_mechanism = 9;
+  string sasl_username = 10;
+  string sasl_password = 11;
+  google.protobuf.Duration late_arrival_deadline = 12;
+  string dead_letter_queue_topic = 13;
+  // AWS MSK IAM authentication fields
+  bool msk_iam_auth = 14;
+  string aws_region = 15;
+  string aws_role_arn = 16;
+}
+
+message PubSubSource {
+  string name = 1;
+  string project_id = 2;
+  string subscription_id = 3;
+  google.protobuf.Duration late_arrival_deadline = 4;
+  string dead_letter_queue_topic = 5;
+}
+
+enum DatabaseSourceType {
+  DATABASE_SOURCE_TYPE_UNSPECIFIED = 0;
+  DATABASE_SOURCE_TYPE_BIGQUERY = 1;
+  DATABASE_SOURCE_TYPE_CLOUDSQL = 2;
+  DATABASE_SOURCE_TYPE_DATABRICKS = 3;
+  DATABASE_SOURCE_TYPE_MYSQL = 4;
+  DATABASE_SOURCE_TYPE_POSTGRES = 5;
+  DATABASE_SOURCE_TYPE_REDSHIFT = 6;
+  DATABASE_SOURCE_TYPE_SNOWFLAKE = 7;
+  DATABASE_SOURCE_TYPE_SQLITE = 8;
+  DATABASE_SOURCE_TYPE_SPANNER = 9;
+  DATABASE_SOURCE_TYPE_TRINO = 10;
+  DATABASE_SOURCE_TYPE_DYNAMODB = 11;
+  DATABASE_SOURCE_TYPE_ATHENA = 12;
+  DATABASE_SOURCE_TYPE_MSSQL = 13;
+}
+
+message DatabaseSourceReference {
+  DatabaseSourceType type = 1;
+  string name = 2;
+}
+
+message DatabaseSource {
+  oneof source {
+    BigQuerySource bigquery = 1;
+    CloudSQLSource cloudsql = 2;
+    DatabricksSource databricks = 3;
+    MySQLSource mysql = 4;
+    PostgresSource postgres = 5;
+    RedshiftSource redshift = 6;
+    SnowflakeSource snowflake = 7;
+    SQLiteSource sqlite = 8;
+    SpannerSource spanner = 9;
+    TrinoSource trino = 10;
+    DynamoDBSource dynamodb = 11;
+    AthenaSource athena = 12;
+    ClickhouseSource clickhouse = 13;
+    MSSQLSource mssql = 14;
+  }
+}
+
+message BigQuerySource {
+  string name = 1;
+  string project = 2;
+  string dataset = 3;
+  string location = 4;
+  string credentials_base64 = 5;
+  string credentials_path = 6;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 7;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 8;
+}
+
+message CloudSQLSource {
+  string name = 1;
+  string db = 2;
+  string user = 3;
+  string password = 4;
+  string instance_name = 5;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 6;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 7;
+}
+
+message DatabricksSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string http_path = 5;
+  string access_token = 6;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 7;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 8;
+}
+
+message DynamoDBSource {
+  string name = 1;
+  optional string aws_client_id_override = 2;
+  optional string aws_client_secret_override = 3;
+  optional string aws_region_override = 4;
+  optional string endpoint_override = 5;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 6;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 7;
+}
+
+message MySQLSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string user = 5;
+  string password = 6;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 7;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 8;
+}
+
+message PostgresSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string user = 5;
+  string password = 6;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 7;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 8;
+}
+
+message MSSQLSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string user = 5;
+  string password = 6;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 7;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 8;
+}
+
+message RedshiftSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string user = 5;
+  string password = 6;
+  string s3_client = 7;
+  string s3_bucket = 8;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 9;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 10;
+  string unload_iam_role = 11;
+}
+
+message SnowflakeSource {
+  string name = 1;
+  string db = 2;
+  string schema = 3;
+  string role = 4;
+  string user = 5;
+  string password = 6;
+  string account_identifier = 7;
+  string warehouse = 8;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 9;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 10;
+  string private_key_b64 = 11;
+}
+
+message SQLiteSource {
+  string name = 1;
+  string file_name = 2;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 3;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 4;
+}
+
+message SpannerSource {
+  string name = 1;
+  string project = 2;
+  string instance = 3;
+  string db = 4;
+  string credentials_base64 = 5;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 6;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 7;
+}
+
+message TrinoSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string catalog = 4;
+  string schema = 5;
+  string user = 6;
+  string password = 7;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 8;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 9;
+}
+
+message AthenaSource {
+  string name = 1;
+  string aws_region = 2;
+  optional string aws_access_key_id = 3;
+  optional string aws_access_key_secret = 4;
+  string s3_staging_dir = 5;
+  optional string catalog_name = 6;
+  optional string schema_name = 7;
+  optional string role_arn = 8;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 9;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 10;
+  optional string work_group = 11;
+}
+
+message ClickhouseSource {
+  string name = 1;
+  string host = 2;
+  string port = 3;
+  string db = 4;
+  string user = 5;
+  string password = 6;
+  bool use_tls = 7;
+  map<string, chalk.arrow.v1.ScalarValue> engine_args = 8;
+  map<string, chalk.arrow.v1.ScalarValue> async_engine_args = 9;
+}

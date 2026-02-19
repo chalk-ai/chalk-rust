@@ -50,9 +50,23 @@ pub enum ChalkClientError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    /// gRPC protocol error (e.g. deadline exceeded, unavailable).
+    #[error("gRPC error: {0}")]
+    Grpc(Box<tonic::Status>),
+
+    /// gRPC transport/connection error.
+    #[error("gRPC transport error: {0}")]
+    GrpcTransport(#[from] tonic::transport::Error),
+
     /// The Chalk server returned one or more structured errors in its response.
     #[error("server returned {} error(s): {}", .0.len(), .0.first().map(|e| e.message.as_str()).unwrap_or("unknown"))]
     ServerErrors(Vec<ChalkError>),
+}
+
+impl From<tonic::Status> for ChalkClientError {
+    fn from(status: tonic::Status) -> Self {
+        ChalkClientError::Grpc(Box::new(status))
+    }
 }
 
 /// A convenience type alias so we can write `Result<T>` instead of

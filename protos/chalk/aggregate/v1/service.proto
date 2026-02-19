@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package chalk.aggregate.v1;
+
+import "chalk/aggregate/v1/backfill.proto";
+import "chalk/aggregate/v1/timeseries.proto";
+import "chalk/auth/v1/audit.proto";
+import "chalk/auth/v1/permissions.proto";
+import "chalk/common/v1/chalk_error.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "aggregate/v1;aggregatev1";
+
+message PlanAggregateBackfillRequest {
+  AggregateBackfillUserParams params = 1;
+}
+message PlanAggregateBackfillResponse {
+  AggregateBackfillCostEstimate estimate = 2;
+  repeated string errors = 4;
+  repeated AggregateBackfillWithCostEstimate backfills = 6;
+  string aggregate_backfill_id = 7;
+}
+
+message GetAggregatesRequest {
+  repeated string for_features = 1;
+}
+message GetAggregatesResponse {
+  repeated AggregateTimeSeries series = 1;
+  repeated string errors = 2;
+}
+
+message GetAggregateBackfillJobsRequest {
+  int32 limit = 1;
+  string cursor = 2;
+  optional string plan_hash = 3;
+}
+
+message GetAggregateBackfillJobsResponse {
+  repeated AggregateBackfillJob jobs = 1;
+  string cursor = 2;
+}
+
+message GetAggregateBackfillJobRequest {
+  string aggregate_backfill_id = 1;
+}
+
+message GetAggregateBackfillJobResponse {
+  AggregateBackfillJob job = 1;
+}
+
+message GetCronAggregateBackfillRequest {
+  string cron_aggregate_backfill_id = 1 [deprecated = true];
+  string plan_hash = 2;
+}
+
+message GetCronAggregateBackfillResponse {
+  CronAggregateBackfill cron_aggregate_backfill = 1;
+}
+
+message GetActiveCronAggregateBackfillsRequest {}
+
+message CronAggregateBackfillWithLatestRun {
+  CronAggregateBackfill cron_aggregate_backfill = 1;
+  AggregateBackfillJob latest_job = 2;
+}
+
+message GetActiveCronAggregateBackfillsResponse {
+  repeated CronAggregateBackfillWithLatestRun cron_aggregate_backfills = 1;
+}
+
+message CreateAggregateBackfillJobRequest {
+  repeated string features = 1;
+  optional google.protobuf.Timestamp lower_bound = 2;
+  optional google.protobuf.Timestamp upper_bound = 3;
+  optional string resolver = 4;
+  optional string bucket_feature = 5;
+  bool enable_profiling = 6;
+  optional string aggregate_backfill_id = 7;
+  optional string resource_group = 8;
+}
+
+message CreateAggregateBackfillJobResponse {
+  string job_id = 1;
+  repeated string features = 2;
+  repeated chalk.common.v1.ChalkError errors = 3;
+}
+
+service AggregateService {
+  // PlanAggregateBackfill determines the estimated resources needed to backfill
+  // an aggregate.
+  //
+  // This method is a duplicate of the PlanAggregateBackfill method
+  // in the query_server.proto file. We should remove the query_server.proto method
+  // and move that request to this service instead.
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc PlanAggregateBackfill(PlanAggregateBackfillRequest) returns (PlanAggregateBackfillResponse) {
+    option (chalk.auth.v1.audit) = {level: AUDIT_LEVEL_ALL};
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_CREATE;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // This method is a duplicate of the PlanAggregateBackfill method
+  // in the query_server.proto file. We should remove the query_server.proto method
+  // and move that request to this service instead.
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc GetAggregates(chalk.aggregate.v1.GetAggregatesRequest) returns (chalk.aggregate.v1.GetAggregatesResponse) {
+    option (chalk.auth.v1.audit) = {level: AUDIT_LEVEL_ALL};
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc GetAggregateBackfillJobs(chalk.aggregate.v1.GetAggregateBackfillJobsRequest) returns (chalk.aggregate.v1.GetAggregateBackfillJobsResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc GetAggregateBackfillJob(chalk.aggregate.v1.GetAggregateBackfillJobRequest) returns (chalk.aggregate.v1.GetAggregateBackfillJobResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc GetCronAggregateBackfill(GetCronAggregateBackfillRequest) returns (GetCronAggregateBackfillResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc GetActiveCronAggregateBackfills(GetActiveCronAggregateBackfillsRequest) returns (GetActiveCronAggregateBackfillsResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc CreateAggregateBackfillJob(CreateAggregateBackfillJobRequest) returns (CreateAggregateBackfillJobResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_OFFLINE;
+  }
+}

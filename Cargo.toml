@@ -21,6 +21,9 @@ arrow = { version = "56", features = ["ipc_compression"] }
 bytes = "1"
 serde_yaml = "0.9"
 dirs = "5"
+prost = "0.13"
+prost-types = "0.13"
+tonic = { version = "0.12", features = ["channel", "transport", "tls"] }
 
 [dev-dependencies]
 mockito = "1"

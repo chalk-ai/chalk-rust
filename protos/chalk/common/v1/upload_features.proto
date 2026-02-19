@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package chalk.common.v1;
+
+import "chalk/common/v1/chalk_error.proto";
+
+message UploadFeaturesRequest {
+  bytes inputs_table = 1;
+}
+
+message UploadFeaturesResponse {
+  repeated ChalkError errors = 1;
+  string operation_id = 2;
+}

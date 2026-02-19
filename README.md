@@ -168,6 +168,51 @@ println!("operation_id: {:?}", result.operation_id);
 # }
 ```
 
+## gRPC Client
+
+For latency-sensitive, high-throughput workloads, use the gRPC client instead
+of the REST/JSON client. gRPC uses Protocol Buffers over HTTP/2, which means
+smaller payloads, no JSON parsing, and multiplexed requests over a single
+connection.
+
+The gRPC client supports `query`, `query_bulk`, and `upload_features`. Offline
+queries are only available via the REST client.
+
+```rust,no_run
+use chalk_rs::ChalkGrpcClient;
+use chalk_rs::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
+use std::collections::HashMap;
+
+# async fn example() -> chalk_rs::error::Result<()> {
+let client = ChalkGrpcClient::new()
+    .build()
+    .await?;
+
+let request = OnlineQueryRequest {
+    inputs: HashMap::from([(
+        "user.id".to_string(),
+        prost_types::Value {
+            kind: Some(prost_types::value::Kind::NumberValue(42.0)),
+        },
+    )]),
+    outputs: vec![OutputExpr {
+        expr: Some(chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
+            "user.name".to_string(),
+        )),
+    }],
+    ..Default::default()
+};
+
+let response = client.query(request).await?;
+if let Some(data) = &response.data {
+    for result in &data.results {
+        println!("{}: {:?}", result.field, result.value);
+    }
+}
+# Ok(())
+# }
+```
+
 ## Error Handling
 
 All methods return `chalk_rs::error::Result<T>`, which uses `ChalkClientError`:

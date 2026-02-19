@@ -85,7 +85,7 @@ async fn main() -> chalk_rs::error::Result<()> {
     if let Some(rev) = response2.revisions.last() {
         if let Some(ref rev_id) = rev.revision_id {
             let status = client.get_offline_query_status(rev_id).await?;
-            println!("  status: {:?}", status.report.status);
+            println!("  status: {:?}", status.report.as_ref().and_then(|r| r.status.as_ref()));
         }
     }
 

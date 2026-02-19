@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package chalk.lsp.v1;
+
+message LSP {
+  repeated PublishDiagnosticsParams diagnostics = 1;
+  repeated CodeAction actions = 2;
+}
+
+message PublishDiagnosticsParams {
+  string uri = 1;
+  repeated Diagnostic diagnostics = 2;
+}
+
+message Diagnostic {
+  Range range = 1;
+  string message = 2;
+  DiagnosticSeverity severity = 3;
+  optional string code = 4;
+  CodeDescription code_description = 5;
+  repeated DiagnosticRelatedInformation related_information = 6;
+}
+
+message Range {
+  Position start = 1;
+  Position end = 2;
+}
+
+message Position {
+  optional int32 line = 1;
+  optional int32 character = 2;
+}
+
+enum DiagnosticSeverity {
+  DIAGNOSTIC_SEVERITY_UNSPECIFIED = 0;
+  DIAGNOSTIC_SEVERITY_ERROR = 1;
+  DIAGNOSTIC_SEVERITY_WARNING = 2;
+  DIAGNOSTIC_SEVERITY_INFORMATION = 3;
+  DIAGNOSTIC_SEVERITY_HINT = 4;
+}
+
+message CodeAction {
+  string title = 1;
+  repeated Diagnostic diagnostics = 2;
+  WorkspaceEdit edit = 3;
+}
+
+message WorkspaceEdit {
+  repeated TextDocumentEdit document_changes = 1;
+}
+
+message TextDocumentEdit {
+  TextDocumentIdentifier text_document = 1;
+  repeated TextEdit edits = 2;
+}
+
+message TextDocumentIdentifier {
+  string uri = 1;
+}
+
+message TextEdit {
+  Range range = 1;
+  string new_text = 2;
+}
+
+message CodeDescription {
+  string href = 1;
+}
+
+message DiagnosticRelatedInformation {
+  Location location = 1;
+  string message = 2;
+}
+
+message Location {
+  string uri = 1;
+  Range range = 2;
+}

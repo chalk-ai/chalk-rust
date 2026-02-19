@@ -1,0 +1,229 @@
+syntax = "proto3";
+
+package chalk.arrow.v1;
+
+message Schema {
+  repeated Field columns = 1;
+  map<string, string> metadata = 2;
+}
+
+message Field {
+  string name = 1;
+  ArrowType arrow_type = 2;
+  bool nullable = 3;
+  repeated Field children = 4;
+  map<string, string> metadata = 5;
+}
+
+message FixedSizeBinary {
+  int32 length = 1;
+}
+
+message Timestamp {
+  TimeUnit time_unit = 1;
+  string timezone = 2;
+}
+
+enum TimeUnit {
+  TIME_UNIT_UNSPECIFIED = 0;
+  TIME_UNIT_SECOND = 1;
+  TIME_UNIT_MILLISECOND = 2;
+  TIME_UNIT_MICROSECOND = 3;
+  TIME_UNIT_NANOSECOND = 4;
+}
+
+message Decimal {
+  int32 precision = 1;
+  int32 scale = 2;
+}
+
+message List {
+  Field field_type = 1;
+}
+
+message FixedSizeList {
+  Field field_type = 1;
+  int32 list_size = 2;
+}
+
+message Struct {
+  repeated Field sub_field_types = 1;
+}
+
+message Map {
+  Field key_field = 1;
+  Field item_field = 2;
+  bool keys_sorted = 3;
+}
+
+message ScalarListValue {
+  bytes arrow_data = 1;
+  Schema schema = 2;
+}
+
+message ScalarTime32Value {
+  oneof value {
+    int32 time32_second_value = 1;
+    int32 time32_millisecond_value = 2;
+  }
+}
+
+message ScalarTime64Value {
+  oneof value {
+    int64 time64_microsecond_value = 1;
+    int64 time64_nanosecond_value = 2;
+  }
+}
+
+message ScalarTimestampValue {
+  oneof value {
+    int64 time_microsecond_value = 1;
+    int64 time_nanosecond_value = 2;
+    int64 time_second_value = 3;
+    int64 time_millisecond_value = 4;
+  }
+  string timezone = 5;
+}
+
+message StructValue {
+  repeated ScalarValue field_values = 2;
+  repeated Field fields = 3;
+}
+
+message ScalarFixedSizeBinary {
+  bytes values = 1;
+  int32 length = 2;
+}
+
+message DecimalValue {
+  bytes value = 1;
+  int32 precision = 2;
+  int32 scale = 3;
+}
+
+// Extension is used to
+message Extension {
+  // The name of the extension -- e.g. arrow.json. See
+  // https://arrow.apache.org/docs/format/CanonicalExtensions.html
+  string name = 1;
+  // The underlying storage type for this extension type.
+  ArrowType storage_type = 2;
+}
+
+message ExtensionValue {
+  Extension extension_type = 1;
+  ScalarValue storage_value = 2;
+}
+
+message ScalarValue {
+  oneof value {
+    // Group popular types at the top
+    // to save space in the serialized
+    // message.
+    ArrowType null_value = 1;
+    bool bool_value = 2;
+    double float64_value = 3;
+    int64 int64_value = 4;
+    string large_utf8_value = 5;
+    ScalarTimestampValue timestamp_value = 6;
+    int64 date_64_value = 7;
+    StructValue struct_value = 8;
+    ScalarListValue large_list_value = 9;
+    ScalarTime64Value time64_value = 10;
+    // Leave placeholders for 11-15 in case
+    // we get the most popular types wrong.
+
+    int64 duration_second_value = 16;
+    int64 duration_millisecond_value = 17;
+    int64 duration_microsecond_value = 18;
+    int64 duration_nanosecond_value = 19;
+
+    string utf8_value = 20;
+    int32 int8_value = 21;
+    int32 int16_value = 22;
+    int32 int32_value = 23;
+    uint32 uint8_value = 24;
+    uint32 uint16_value = 25;
+    uint32 uint32_value = 26;
+    uint64 uint64_value = 27;
+    float float16_value = 28;
+    float float32_value = 29;
+
+    int32 date_32_value = 30;
+    ScalarTime32Value time32_value = 31;
+
+    ScalarListValue list_value = 32;
+    ScalarListValue fixed_size_list_value = 33;
+    ScalarListValue map_value = 34;
+
+    bytes binary_value = 35;
+    bytes large_binary_value = 36;
+    ScalarFixedSizeBinary fixed_size_binary_value = 37;
+
+    DecimalValue decimal128_value = 38;
+    DecimalValue decimal256_value = 39;
+    ExtensionValue extension_value = 40;
+  }
+}
+
+message ArrowType {
+  oneof arrow_type_enum {
+    // Group popular types at the top
+    // to save space in the serialized
+    // message.
+    EmptyMessage none = 1;
+    EmptyMessage bool = 2;
+    EmptyMessage float64 = 3;
+    EmptyMessage int64 = 4;
+    EmptyMessage large_utf8 = 5;
+    Timestamp timestamp = 6;
+    EmptyMessage date64 = 7;
+    Struct struct = 8;
+    List large_list = 9;
+    TimeUnit time64 = 10;
+    // Leave placeholders for 11-15 in case
+    // we get the most popular types wrong.
+
+    TimeUnit duration = 16;
+    EmptyMessage utf8 = 17;
+    EmptyMessage int8 = 18;
+    EmptyMessage int16 = 19;
+    EmptyMessage int32 = 20;
+    EmptyMessage uint8 = 21;
+    EmptyMessage uint16 = 22;
+    EmptyMessage uint32 = 23;
+    EmptyMessage uint64 = 24;
+    EmptyMessage float16 = 25;
+    EmptyMessage float32 = 26;
+
+    EmptyMessage date32 = 27;
+    TimeUnit time32 = 28;
+
+    List list = 29;
+    FixedSizeList fixed_size_list = 30;
+
+    EmptyMessage binary = 31;
+    EmptyMessage large_binary = 32;
+    int32 fixed_size_binary = 33;
+
+    Decimal decimal_128 = 34;
+    Decimal decimal_256 = 35;
+
+    Map map = 36;
+
+    Extension extension = 37;
+  }
+}
+message EmptyMessage {}
+
+enum FeatherCompression {
+  FEATHER_COMPRESSION_UNSPECIFIED = 0;
+  FEATHER_COMPRESSION_UNCOMPRESSED = 1;
+  FEATHER_COMPRESSION_LZ4 = 2;
+  FEATHER_COMPRESSION_ZSTD = 3;
+}
+
+/// A Table, encoded as parquet bytes.
+message TableParquetBytes {
+  bytes encoded_parquet_bytes = 1;
+}

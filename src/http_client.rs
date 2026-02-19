@@ -424,18 +424,21 @@ impl ChalkClient {
         let poll_fut = async {
             loop {
                 let status_resp = self.get_offline_query_status(revision).await?;
-                let status = status_resp
-                    .report
-                    .status
-                    .as_deref()
-                    .unwrap_or("UNKNOWN");
+                let report = match status_resp.report {
+                    Some(r) => r,
+                    None => {
+                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        continue;
+                    }
+                };
+                let status = report.status.as_deref().unwrap_or("UNKNOWN");
 
                 match status {
                     "COMPLETED" => return Ok(()),
                     "FAILED" => {
-                        let errors = status_resp.report.all_errors;
+                        let errors = report.all_errors;
                         if errors.is_empty() {
-                            if let Some(err) = status_resp.report.error {
+                            if let Some(err) = report.error {
                                 return Err(ChalkClientError::ServerErrors(vec![err]));
                             }
                             return Err(ChalkClientError::Api {

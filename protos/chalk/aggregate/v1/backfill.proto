@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package chalk.aggregate.v1;
+
+import "chalk/aggregate/v1/timeseries.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "aggregate/v1;aggregatev1";
+
+enum AggregateBackfillStatus {
+  AGGREGATE_BACKFILL_STATUS_UNSPECIFIED = 0;
+
+  AGGREGATE_BACKFILL_STATUS_INITIALIZING = 1;
+  AGGREGATE_BACKFILL_STATUS_INIT_FAILED = 2;
+  AGGREGATE_BACKFILL_STATUS_SKIPPED = 3;
+  AGGREGATE_BACKFILL_STATUS_QUEUED = 4; // init completed
+
+  AGGREGATE_BACKFILL_STATUS_WORKING = 5;
+  AGGREGATE_BACKFILL_STATUS_COMPLETED = 6;
+  AGGREGATE_BACKFILL_STATUS_FAILED = 7;
+  AGGREGATE_BACKFILL_STATUS_CANCELED = 8;
+}
+
+message AggregateBackfillCostEstimate {
+  int64 max_buckets = 1;
+  int64 expected_buckets = 2;
+  int64 expected_bytes = 3;
+  double expected_storage_cost = 4;
+  google.protobuf.Duration expected_runtime = 5;
+}
+
+message AggregateBackfillUserParams {
+  repeated string features = 1;
+  optional string resolver = 2;
+  optional string timestamp_column_name = 3 [deprecated = true];
+  optional google.protobuf.Timestamp lower_bound = 4;
+  optional google.protobuf.Timestamp upper_bound = 5;
+  bool exact = 6;
+}
+
+message AggregateBackfill {
+  repeated AggregateTimeSeries series = 1;
+  string resolver = 2;
+  string datetime_feature = 3;
+  google.protobuf.Duration bucket_duration = 4;
+  string filters_description = 5;
+  repeated string group_by = 6;
+  google.protobuf.Duration max_retention = 7;
+  google.protobuf.Timestamp lower_bound = 8;
+  google.protobuf.Timestamp upper_bound = 9;
+}
+
+message AggregateBackfillWithCostEstimate {
+  AggregateBackfill backfill = 1;
+  AggregateBackfillCostEstimate estimate = 2;
+}
+
+message AggregateBackfillJob {
+  string id = 1;
+  string environment_id = 2;
+  optional string resolver = 3;
+  repeated string features = 4;
+  optional string agent_id = 5;
+  optional string deployment_id = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  repeated string resolvers = 9;
+  optional string cron_aggregate_backfill_id = 10;
+  optional string plan_hash = 11;
+  AggregateBackfillStatus status = 12;
+}
+
+message CronAggregateBackfill {
+  string id = 1;
+  string environment_id = 2;
+  string deployment_id = 3;
+  string schedule = 4;
+  string plan_hash = 5;
+  repeated string features = 8;
+  repeated string resolvers = 9;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}

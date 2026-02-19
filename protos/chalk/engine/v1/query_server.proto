@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package chalk.engine.v1;
+
+import "chalk/aggregate/v1/service.proto";
+import "chalk/auth/v1/permissions.proto";
+import "chalk/common/v1/online_query.proto";
+import "chalk/common/v1/upload_features.proto";
+
+message PingRequest {
+  int32 num = 1;
+}
+
+message PingResponse {
+  int32 num = 1;
+}
+
+service QueryService {
+  rpc Ping(PingRequest) returns (PingResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_INSECURE_UNAUTHENTICATED;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc OnlineQuery(chalk.common.v1.OnlineQueryRequest) returns (chalk.common.v1.OnlineQueryResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_ONLINE;
+  }
+
+  rpc OnlineQueryBulk(chalk.common.v1.OnlineQueryBulkRequest) returns (chalk.common.v1.OnlineQueryBulkResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_ONLINE;
+  }
+
+  rpc OnlineQueryMulti(chalk.common.v1.OnlineQueryMultiRequest) returns (chalk.common.v1.OnlineQueryMultiResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_ONLINE;
+  }
+
+  rpc UploadFeaturesBulk(chalk.common.v1.UploadFeaturesBulkRequest) returns (chalk.common.v1.UploadFeaturesBulkResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_ONLINE;
+  }
+
+  rpc UploadFeatures(chalk.common.v1.UploadFeaturesRequest) returns (chalk.common.v1.UploadFeaturesResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_QUERY_ONLINE;
+  }
+
+  // PlanAggregateBackfill determines the estimated resources needed to backfill
+  // an aggregate.
+  //
+  // This method is a duplicate of the PlanAggregateBackfill method
+  // in the query_server.proto file. We should remove the query_server.proto method
+  // and move that request to this service instead.
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc PlanAggregateBackfill(chalk.aggregate.v1.PlanAggregateBackfillRequest) returns (chalk.aggregate.v1.PlanAggregateBackfillResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_CREATE;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // This method is a duplicate of the PlanAggregateBackfill method
+  // in the query_server.proto file. We should remove the query_server.proto method
+  // and move that request to this service instead.
+  // buf:lint:ignore RPC_REQUEST_RESPONSE_UNIQUE
+  rpc GetAggregates(chalk.aggregate.v1.GetAggregatesRequest) returns (chalk.aggregate.v1.GetAggregatesResponse) {
+    option (chalk.auth.v1.permission) = PERMISSION_DEPLOY_READ;
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}

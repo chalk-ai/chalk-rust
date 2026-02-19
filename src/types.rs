@@ -428,7 +428,7 @@ pub struct DatasetRevision {
 /// Response from `GET /v4/offline_query/{job_id}/status`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct GetOfflineQueryStatusResponse {
-    pub report: BatchReport,
+    pub report: Option<BatchReport>,
 }
 
 /// Status report for an offline query batch job.

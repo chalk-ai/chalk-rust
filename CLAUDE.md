@@ -10,7 +10,10 @@
 
 ## Project Structure
 
-- `src/` — library source code (HTTP client, auth, config, types, offline query builder)
+- `src/` — library source code (HTTP client, gRPC client, auth, config, types, offline query builder)
+- `src/gen/` — pre-generated protobuf Rust code (do not edit by hand; regenerate with `./generate.sh`)
+- `protos/` — vendored `.proto` definitions
+- `tools/gen-protos/` — code generation tool
 - `examples/` — standalone example binaries (require env vars to run)
 
 ## Examples
@@ -25,5 +28,6 @@ Run an example: `cargo run --example online_query`
 
 ## Notes
 
-- gRPC support is excluded for now (will be added later as a cargo feature)
 - The crate is published as `chalk-rs` on crates.io
+- Proto files are vendored in `protos/` and generated code is committed in `src/gen/`
+- To regenerate proto code: `./generate.sh` (requires `protoc` on PATH)

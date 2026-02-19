@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package chalk.graph.v2;
+
+import "google/protobuf/struct.proto";
+
+// Pointer to an underlying database source -- used by native sql resolvers to identify which DB they are for
+message DatabaseSourceReference {
+  // The type of the database source -- e.g. postgres, bigquery
+  string source_type = 1;
+  // The (customer provided) name for the database source. The default source for the given type is represented by the empty string
+  string name = 2;
+}
+
+message DatabaseSource {
+  // The type of the database source -- e.g. postgres, bigquery
+  string source_type = 1;
+  // The (customer provided) name for the database source. The default source for the given type is represented by the empty string
+  string name = 2;
+  // Additional source-specific options. DO NOT STORE CREDENTIALS IN HERE.
+  map<string, google.protobuf.Value> options = 3;
+}
+
+message DatabaseSourceGroup {
+  string name = 1;
+  DatabaseSourceReference default_source = 2;
+  map<string, DatabaseSourceReference> tagged_sources = 3;
+}
+
+// Pointer to an underlying stream source -- used by stream resolvers
+message StreamSourceReference {
+  // The type of the stream source -- e.g. kafka, pubsub, sqs
+  string source_type = 1;
+  // The (customer provided) name for the stream source. The default source for the given type is represented by the empty string
+  string name = 2;
+}
+
+message StreamSource {
+  // The type of the stream source -- e.g. kafka, pubsub, sqs
+  string source_type = 1;
+  // The (customer provided) name for the stream source. The default source for the given type is represented by the empty string
+  string name = 2;
+  // Additional source-specific options. DO NOT STORE CREDENTIALS IN HERE.
+  map<string, google.protobuf.Value> options = 3;
+}
+
+message SourceSecrets {
+  // Secrets for sql and stream sources, in the style of integration variables
+  map<string, string> secrets = 1;
+}

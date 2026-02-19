@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package chalk.auth.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "auth/v1;authv1";
+
+enum AuditLevel {
+  AUDIT_LEVEL_UNSPECIFIED = 0;
+  AUDIT_LEVEL_ERRORS = 1;
+  AUDIT_LEVEL_ALL = 2;
+}
+
+message AuditOptions {
+  AuditLevel level = 1;
+  string description = 2;
+}
+
+extend google.protobuf.MethodOptions {
+  optional AuditOptions audit = 30001;
+}
