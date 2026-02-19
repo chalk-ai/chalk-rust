@@ -1,6 +1,2 @@
 [toolchain]
-channel = "nightly"
-
-components = [
-    "cargo",
-]
+channel = "stable"
