@@ -1,9 +1,7 @@
 //! Querying features via gRPC.
 //!
+//! Run with:
 //! ```sh
-//! export CHALK_CLIENT_ID="..."
-//! export CHALK_CLIENT_SECRET="..."
-//! export CHALK_ACTIVE_ENVIRONMENT="..."
 //! cargo run --example grpc_query
 //! ```
 
@@ -20,7 +18,7 @@ async fn main() -> chalk_rs::error::Result<()> {
         inputs: HashMap::from([(
             "user.id".to_string(),
             prost_types::Value {
-                kind: Some(prost_types::value::Kind::NumberValue(42.0)),
+                kind: Some(prost_types::value::Kind::NumberValue(1.0)),
             },
         )]),
         outputs: vec![

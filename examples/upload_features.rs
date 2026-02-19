@@ -7,7 +7,7 @@
 
 use chalk_rs::ChalkClient;
 
-use arrow::array::{Float64Array, Int64Array, StringArray};
+use arrow::array::{Int64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;
@@ -27,8 +27,8 @@ async fn main() -> chalk_rs::error::Result<()> {
 
     let schema = Arc::new(Schema::new(vec![
         Field::new("user.id", DataType::Int64, false),
-        Field::new("user.full_name", DataType::Utf8, true),
-        Field::new("user.socure_score", DataType::Float64, true),
+        Field::new("user.name", DataType::Utf8, true),
+        Field::new("user.age", DataType::Int64, true),
     ]));
 
     let batch = RecordBatch::try_new(
@@ -36,7 +36,7 @@ async fn main() -> chalk_rs::error::Result<()> {
         vec![
             Arc::new(Int64Array::from(vec![1001, 1002, 1003])),
             Arc::new(StringArray::from(vec!["Alice", "Bob", "Charlie"])),
-            Arc::new(Float64Array::from(vec![750.0, 680.5, 820.3])),
+            Arc::new(Int64Array::from(vec![30, 25, 35])),
         ],
     )
     .expect("failed to create RecordBatch");
@@ -68,17 +68,11 @@ async fn main() -> chalk_rs::error::Result<()> {
     let inputs = HashMap::from([
         (
             "user.id".to_string(),
-            vec![
-                serde_json::json!(2001),
-                serde_json::json!(2002),
-            ],
+            vec![serde_json::json!(2001), serde_json::json!(2002)],
         ),
         (
-            "user.full_name".to_string(),
-            vec![
-                serde_json::json!("Diana"),
-                serde_json::json!("Eve"),
-            ],
+            "user.name".to_string(),
+            vec![serde_json::json!("Diana"), serde_json::json!("Eve")],
         ),
     ]);
 

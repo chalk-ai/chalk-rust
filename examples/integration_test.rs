@@ -1,27 +1,41 @@
 //! End-to-end integration test against a live Chalk environment.
 //!
-//! Prerequisites: run `chalk login` or `chalkadmin customer login` to
-//! populate ~/.chalk.yml with credentials for the target environment.
+//! Automatically runs `chalkadmin customer login` to refresh credentials
+//! before executing tests. Requires `chalkadmin` on PATH.
 //!
 //! ```sh
 //! cargo run --example integration_test
 //! ```
 
-use chalk_rs::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
+use chalk_rs::gen::chalk::common::v1::{
+    OnlineQueryBulkRequest, OnlineQueryRequest, OutputExpr, UploadFeaturesBulkRequest,
+};
 use chalk_rs::types::QueryOptions;
 use chalk_rs::{ChalkClient, ChalkGrpcClient, OfflineQueryParams};
 use std::collections::HashMap;
+use std::process::Command;
 use std::time::Duration;
 
-use arrow::array::Int64Array;
+use arrow::array::{Int64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::ipc::reader::FileReader;
+use arrow::ipc::writer::FileWriter;
 use arrow::record_batch::RecordBatch;
 use std::io::Cursor;
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Refresh credentials before running tests.
+    println!("Refreshing credentials via chalkadmin...");
+    let status = Command::new("chalkadmin")
+        .args(["customer", "login", "--name", "sandbox_support"])
+        .status()?;
+    if !status.success() {
+        return Err(format!("chalkadmin exited with {}", status).into());
+    }
+    println!();
+
     // ---- HTTP Client ----
 
     let client = ChalkClient::new().build().await?;
@@ -158,42 +172,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\ngRPC client connected");
     println!("  environment: {}", grpc_client.environment_id());
 
-    // Test 6: gRPC online query
+    // Test 6: gRPC online query (retry — sandbox gRPC engine may be cold)
     println!("\n=== Test 6: gRPC Online Query (user.id=1) ===");
-    let grpc_response = grpc_client
-        .query(OnlineQueryRequest {
-            inputs: HashMap::from([(
-                "user.id".to_string(),
-                prost_types::Value {
-                    kind: Some(prost_types::value::Kind::NumberValue(1.0)),
-                },
-            )]),
-            outputs: vec![
-                OutputExpr {
-                    expr: Some(
-                        chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
-                            "user.id".to_string(),
-                        ),
-                    ),
-                },
-                OutputExpr {
-                    expr: Some(
-                        chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
-                            "user.name".to_string(),
-                        ),
-                    ),
-                },
-                OutputExpr {
-                    expr: Some(
-                        chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
-                            "user.age".to_string(),
-                        ),
-                    ),
-                },
-            ],
-            ..Default::default()
-        })
-        .await?;
+    let grpc_request = OnlineQueryRequest {
+        inputs: HashMap::from([(
+            "user.id".to_string(),
+            prost_types::Value {
+                kind: Some(prost_types::value::Kind::NumberValue(1.0)),
+            },
+        )]),
+        outputs: vec![
+            output_expr("user.id"),
+            output_expr("user.name"),
+            output_expr("user.age"),
+        ],
+        ..Default::default()
+    };
+    let grpc_response = retry_grpc(&grpc_client, grpc_request).await?;
     if let Some(data) = &grpc_response.data {
         for result in &data.results {
             println!("  {}: {:?}", result.field, result.value);
@@ -213,22 +208,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     kind: Some(prost_types::value::Kind::NumberValue(2.0)),
                 },
             )]),
-            outputs: vec![
-                OutputExpr {
-                    expr: Some(
-                        chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
-                            "user.name".to_string(),
-                        ),
-                    ),
-                },
-                OutputExpr {
-                    expr: Some(
-                        chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
-                            "user.age".to_string(),
-                        ),
-                    ),
-                },
-            ],
+            outputs: vec![output_expr("user.name"), output_expr("user.age")],
             ..Default::default()
         })
         .await?;
@@ -241,6 +221,105 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("  error: {}", err.message);
     }
 
+    // Test 8: gRPC bulk query
+    println!("\n=== Test 8: gRPC Bulk Query (user.id=[1,2,3]) ===");
+    let grpc_bulk_schema = Arc::new(Schema::new(vec![Field::new(
+        "user.id",
+        DataType::Int64,
+        false,
+    )]));
+    let grpc_bulk_batch = RecordBatch::try_new(
+        grpc_bulk_schema,
+        vec![Arc::new(Int64Array::from(vec![1, 2, 3]))],
+    )?;
+    let grpc_bulk_feather = serialize_to_feather(&grpc_bulk_batch)?;
+    let grpc_bulk_response = grpc_client
+        .query_bulk(OnlineQueryBulkRequest {
+            inputs: Some(
+                chalk_rs::gen::chalk::common::v1::online_query_bulk_request::Inputs::InputsFeather(
+                    grpc_bulk_feather,
+                ),
+            ),
+            outputs: vec![
+                output_expr("user.id"),
+                output_expr("user.name"),
+                output_expr("user.age"),
+            ],
+            ..Default::default()
+        })
+        .await?;
+    if !grpc_bulk_response.scalars_data.is_empty() {
+        let cursor = Cursor::new(&grpc_bulk_response.scalars_data);
+        let reader = FileReader::try_new(cursor, None)?;
+        for batch_result in reader {
+            let batch = batch_result?;
+            println!("  {} rows x {} cols", batch.num_rows(), batch.num_columns());
+        }
+    }
+    for err in &grpc_bulk_response.errors {
+        eprintln!("  error: {}", err.message);
+    }
+
+    // Test 9: gRPC upload features
+    println!("\n=== Test 9: gRPC Upload Features ===");
+    let upload_schema = Arc::new(Schema::new(vec![
+        Field::new("user.id", DataType::Int64, false),
+        Field::new("user.name", DataType::Utf8, true),
+        Field::new("user.age", DataType::Int64, true),
+    ]));
+    let upload_batch = RecordBatch::try_new(
+        upload_schema,
+        vec![
+            Arc::new(Int64Array::from(vec![98])),
+            Arc::new(StringArray::from(vec!["GrpcTestUser"])),
+            Arc::new(Int64Array::from(vec![33])),
+        ],
+    )?;
+    let upload_feather = serialize_to_feather(&upload_batch)?;
+    let grpc_upload_response = grpc_client
+        .upload_features(UploadFeaturesBulkRequest {
+            inputs_feather: upload_feather,
+            ..Default::default()
+        })
+        .await?;
+    println!("  errors: {:?}", grpc_upload_response.errors);
+
     println!("\nAll tests passed!");
     Ok(())
+}
+
+fn output_expr(fqn: &str) -> OutputExpr {
+    OutputExpr {
+        expr: Some(
+            chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(fqn.to_string()),
+        ),
+    }
+}
+
+fn serialize_to_feather(batch: &RecordBatch) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let mut buf = Vec::new();
+    let mut writer = FileWriter::try_new(&mut buf, &batch.schema())?;
+    writer.write(batch)?;
+    writer.finish()?;
+    Ok(buf)
+}
+
+/// Retry a gRPC query up to 3 times with backoff. Sandbox environments
+/// may have a cold gRPC engine that returns Unavailable on first connect.
+async fn retry_grpc(
+    client: &ChalkGrpcClient,
+    request: OnlineQueryRequest,
+) -> Result<chalk_rs::gen::chalk::common::v1::OnlineQueryResponse, Box<dyn std::error::Error>> {
+    let mut last_err = None;
+    for attempt in 0..3 {
+        match client.query(request.clone()).await {
+            Ok(resp) => return Ok(resp),
+            Err(e) => {
+                println!("  attempt {} failed: {}, retrying...", attempt + 1, e);
+                last_err = Some(e);
+                tokio::time::sleep(Duration::from_secs(5 * (attempt + 1))).await;
+            }
+        }
+    }
+    Err(last_err.unwrap().into())
 }

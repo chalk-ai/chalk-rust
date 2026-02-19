@@ -36,18 +36,11 @@ async fn main() -> chalk_rs::error::Result<()> {
 
     let outputs = vec![
         "user.id".to_string(),
-        "user.full_name".to_string(),
-        "user.gender".to_string(),
-        "user.socure_score".to_string(),
+        "user.name".to_string(),
+        "user.age".to_string(),
     ];
 
-    let options = QueryOptions {
-        include_meta: Some(true),
-        query_name: Some("rust_bulk_example".to_string()),
-        ..Default::default()
-    };
-
-    let result = client.query_bulk(&batch, outputs, options).await?;
+    let result = client.query_bulk(&batch, outputs, QueryOptions::default()).await?;
 
     println!("has_data: {}", result.has_data);
     println!("scalar_data: {} bytes", result.scalar_data.len());

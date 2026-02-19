@@ -23,11 +23,11 @@ async fn main() -> chalk_rs::error::Result<()> {
         ("user.id".to_string(), serde_json::json!(1)),
     ]);
     let outputs = vec![
-        "user.full_name".to_string(),
+        "user.name".to_string(),
+        "user.age".to_string(),
     ];
     let options = QueryOptions {
         include_meta: Some(true),
-        explain: Some(true),
         ..Default::default()
     };
 
@@ -54,25 +54,6 @@ async fn main() -> chalk_rs::error::Result<()> {
         println!("  query_id: {:?}", meta.query_id);
         println!("  deployment_id: {:?}", meta.deployment_id);
         println!("  environment_id: {:?}", meta.environment_id);
-    }
-
-    // --- Query with query_context ---
-    println!("\n=== Online Query with Context ===");
-
-    let inputs2 = HashMap::from([
-        ("user.id".to_string(), serde_json::json!(1)),
-    ]);
-    let outputs2 = vec!["user.full_name".to_string()];
-    let options2 = QueryOptions {
-        query_name: Some("rust_example_query".to_string()),
-        include_meta: Some(true),
-        ..Default::default()
-    };
-
-    let response2 = client.query(inputs2, outputs2, options2).await?;
-
-    for feature in &response2.data {
-        println!("  {}: {:?}", feature.field, feature.value);
     }
 
     println!("\nOnline query example completed!");
