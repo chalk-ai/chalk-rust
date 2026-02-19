@@ -29,13 +29,15 @@ where
         None | Some(Value::Null) => Ok(None),
         Some(Value::String(s)) => Ok(Some(s)),
         Some(Value::Number(n)) => {
+            // Maps the QueryStatus IntEnum used by the HTTP/JSON API.
             let label = match n.as_i64() {
-                Some(1) => "unknown",
-                Some(2) => "working",
-                Some(3) => "completed",
-                Some(4) => "failed",
-                Some(5) => "canceled",
-                Some(6) => "queued",
+                Some(1) => "pending_submission",
+                Some(2) => "submitted",
+                Some(3) => "running",
+                Some(4) => "error",
+                Some(5) => "expired",
+                Some(6) => "cancelled",
+                Some(7) => "successful",
                 _ => "unknown",
             };
             Ok(Some(label.to_string()))

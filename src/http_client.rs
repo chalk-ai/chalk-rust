@@ -35,7 +35,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::auth::TokenManager;
-use crate::config::{ChalkClientConfig, ChalkClientConfigBuilder};
+use crate::config::{ChalkClientConfig, ChalkClientConfigBuilder, ensure_scheme};
 use crate::error::{ChalkClientError, Result};
 use crate::offline::OfflineQueryParams;
 use crate::types::{
@@ -157,11 +157,13 @@ impl ChalkClientBuilder {
                 )
             })?;
 
-        let query_server = config
-            .query_server
-            .clone()
-            .or_else(|| token.engines.get(&environment_id).cloned())
-            .unwrap_or_else(|| config.api_server.clone());
+        let query_server = ensure_scheme(
+            config
+                .query_server
+                .clone()
+                .or_else(|| token.engines.get(&environment_id).cloned())
+                .unwrap_or_else(|| config.api_server.clone()),
+        );
 
         tracing::info!(
             environment = %environment_id,

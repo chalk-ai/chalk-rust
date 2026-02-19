@@ -1,9 +1,9 @@
 //! gRPC client for the Chalk feature store.
 
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 
 use crate::auth::TokenManager;
-use crate::config::{ChalkClientConfig, ChalkClientConfigBuilder};
+use crate::config::{ChalkClientConfig, ChalkClientConfigBuilder, ensure_scheme};
 use crate::error::{ChalkClientError, Result};
 use crate::gen::chalk::common::v1::{
     OnlineQueryBulkRequest as ProtoOnlineQueryBulkRequest,
@@ -149,12 +149,14 @@ impl ChalkGrpcClientBuilder {
             })?;
 
         // Priority: explicit query_server > grpc_engines > engines > api_server
-        let grpc_url = config
-            .query_server
-            .clone()
-            .or_else(|| token.grpc_engines.get(&environment_id).cloned())
-            .or_else(|| token.engines.get(&environment_id).cloned())
-            .unwrap_or_else(|| config.api_server.clone());
+        let grpc_url = ensure_scheme(
+            config
+                .query_server
+                .clone()
+                .or_else(|| token.grpc_engines.get(&environment_id).cloned())
+                .or_else(|| token.engines.get(&environment_id).cloned())
+                .unwrap_or_else(|| config.api_server.clone()),
+        );
 
         tracing::info!(
             environment = %environment_id,
@@ -162,12 +164,19 @@ impl ChalkGrpcClientBuilder {
             "connecting gRPC channel"
         );
 
-        let channel = Channel::from_shared(grpc_url.clone())
-            .map_err(|e| {
-                ChalkClientError::Config(format!("invalid gRPC URL '{}': {}", grpc_url, e))
-            })?
-            .connect()
-            .await?;
+        let mut endpoint = Channel::from_shared(grpc_url.clone()).map_err(|e| {
+            ChalkClientError::Config(format!("invalid gRPC URL '{}': {}", grpc_url, e))
+        })?;
+
+        if grpc_url.starts_with("https://") {
+            endpoint = endpoint
+                .tls_config(ClientTlsConfig::new().with_native_roots())
+                .map_err(|e| {
+                    ChalkClientError::Config(format!("TLS configuration error: {}", e))
+                })?;
+        }
+
+        let channel = endpoint.connect().await?;
 
         let grpc_client = QueryServiceClient::new(channel);
 
@@ -263,6 +272,11 @@ impl ChalkGrpcClient {
                 .parse()
                 .map_err(|e| ChalkClientError::Config(format!("invalid user-agent: {}", e)))?,
         );
+        metadata.insert(
+            "x-chalk-deployment-type",
+            "engine-grpc".parse().unwrap(),
+        );
+        metadata.insert("x-chalk-server", "engine".parse().unwrap());
 
         if let Some(ref branch) = self.config.branch_id {
             metadata.insert(

@@ -230,14 +230,30 @@ fn load_yaml_config() -> Option<YamlProjectToken> {
     let contents = std::fs::read_to_string(&path).ok()?;
     let config: YamlConfig = serde_yaml::from_str(&contents).ok()?;
 
-    let project_root = find_project_root();
+    // 1. Try a directory containing chalk.yml/chalk.yaml (project marker).
+    if let Some(root) = find_project_root() {
+        if let Some(token) = config.tokens.get(&root) {
+            return Some(token.clone());
+        }
+    }
 
-    let token = project_root
-        .as_deref()
-        .and_then(|root| config.tokens.get(root))
-        .or_else(|| config.tokens.get("default"));
+    // 2. Walk up from CWD looking for a matching key in ~/.chalk.yml.
+    //    This handles `chalk login` / `chalkadmin customer login`, which
+    //    store credentials keyed by the working directory.
+    if let Ok(mut dir) = std::env::current_dir() {
+        loop {
+            let key = dir.to_string_lossy().into_owned();
+            if let Some(token) = config.tokens.get(&key) {
+                return Some(token.clone());
+            }
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
 
-    token.cloned()
+    // 3. Fall back to the "default" key.
+    config.tokens.get("default").cloned()
 }
 
 /// Look for `.chalk.yml` or `.chalk.yaml` in the home directory.
@@ -284,6 +300,16 @@ impl Clone for YamlProjectToken {
             api_server: self.api_server.clone(),
             active_environment: self.active_environment.clone(),
         }
+    }
+}
+
+/// Prepend `https://` if the URL has no scheme. The token response may
+/// return bare hostnames for engine URLs (e.g. `host.chalk.ai:443`).
+pub(crate) fn ensure_scheme(url: String) -> String {
+    if url.starts_with("http://") || url.starts_with("https://") || url.is_empty() {
+        url
+    } else {
+        format!("https://{}", url)
     }
 }
 
