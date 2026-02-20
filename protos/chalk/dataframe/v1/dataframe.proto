@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package chalk.dataframe.v1;
+
+import "chalk/arrow/v1/arrow.proto";
+import "chalk/expression/v1/expression.proto";
+
+/// A (dynamically-typed) operand passed to a DataFrame function.
+message DataFrameOperand {
+  oneof operand {
+    string value_string = 1;
+    int64 value_int = 2;
+    bool value_bool = 3;
+    PyNone value_none = 4;
+    PyList value_list = 5;
+    PyDict value_dict = 6;
+    DataFrameIndex value_dataframe_index = 7;
+    chalk.arrow.v1.Schema arrow_schema = 8;
+    chalk.arrow.v1.TableParquetBytes arrow_table = 9;
+    chalk.expression.v1.LogicalExprNode underscore_expr = 10;
+    chalk.expression.v1.LogicalExprNode libchalk_expr = 11;
+  }
+}
+
+message DataFrameIndex {
+  // The index of this dataframe operator within the plan.
+  int32 dataframe_op_index = 1;
+}
+
+message PyNone {}
+
+message PyList {
+  repeated DataFrameOperand list_items = 1;
+}
+
+message PyDictEntry {
+  DataFrameOperand entry_key = 1;
+  DataFrameOperand entry_value = 2;
+}
+message PyDict {
+  repeated PyDictEntry dict_entries = 1;
+}
+
+message DataFrameConstructor {
+  /// If present, this is a method called on `self_operand`.
+  /// Otherwise, it is a static method on the class itself.
+  optional DataFrameIndex self_operand = 1;
+
+  /// The name of the function to construct the dataframe object.
+  string function_name = 2;
+
+  /// Positional arguments passed to the function.
+  PyList args = 3;
+
+  /// Keyword arguments passed to the function.
+  PyDict kwargs = 4;
+}
+
+message DataFramePlan {
+  /// A sequence of intermediate constructors used to build this plan.
+  /// Constructors can refer to earlier dataframes in the sequence.
+  ///
+  /// The last constructor is the output of the plan.
+  repeated DataFrameConstructor constructors = 1;
+}

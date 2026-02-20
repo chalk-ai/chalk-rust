@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package chalk.aggregate.v1;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "aggregate/v1;aggregatev1";
+
+message AggregateTimeSeriesRule {
+  string aggregation = 1;
+  google.protobuf.Duration bucket_duration = 2;
+
+  // The features which depend on this rule.
+  repeated string dependent_features = 3;
+  google.protobuf.Duration retention = 4;
+  string datetime_feature = 5;
+}
+
+message AggregateTimeSeries {
+  string namespace = 1;
+  string aggregate_on = 2;
+  repeated string group_by = 3;
+  repeated AggregateTimeSeriesRule rules = 5;
+  string filters_description = 6;
+  string bucket_feature = 7;
+}
