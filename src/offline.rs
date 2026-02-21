@@ -26,7 +26,7 @@ const CHALK_TS_COLUMN: &str = "__chalk__.CHALK_TS";
 /// # Examples
 ///
 /// ```
-/// use chalk_rs::OfflineQueryParams;
+/// use chalk_client::OfflineQueryParams;
 /// use serde_json::json;
 ///
 /// let params = OfflineQueryParams::new()

@@ -1,5 +1,5 @@
 [package]
-name = "chalk-rs"
+name = "chalk-client"
 version = "0.1.0"
 edition = "2021"
 description = "Rust client SDK for the Chalk feature store"

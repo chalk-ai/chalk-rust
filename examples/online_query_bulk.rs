@@ -5,8 +5,8 @@
 //! cargo run --example online_query_bulk
 //! ```
 
-use chalk_rs::ChalkClient;
-use chalk_rs::types::QueryOptions;
+use chalk_client::ChalkClient;
+use chalk_client::types::QueryOptions;
 
 use arrow::array::{Int64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
@@ -16,7 +16,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 #[tokio::main]
-async fn main() -> chalk_rs::error::Result<()> {
+async fn main() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new().build().await?;
 
     println!("Environment: {}", client.environment_id());

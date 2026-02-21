@@ -5,12 +5,12 @@
 //! cargo run --example online_query
 //! ```
 
-use chalk_rs::ChalkClient;
-use chalk_rs::types::QueryOptions;
+use chalk_client::ChalkClient;
+use chalk_client::types::QueryOptions;
 use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> chalk_rs::error::Result<()> {
+async fn main() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new().build().await?;
 
     println!("Environment: {}", client.environment_id());

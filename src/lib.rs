@@ -1,4 +1,4 @@
-//! # chalk-rs
+//! # chalk-client
 //!
 //! The official [Chalk](https://chalk.ai) client library for Rust.
 //!
@@ -10,11 +10,11 @@
 //! ## Quick Start
 //!
 //! ```rust,no_run
-//! use chalk_rs::ChalkClient;
-//! use chalk_rs::types::QueryOptions;
+//! use chalk_client::ChalkClient;
+//! use chalk_client::types::QueryOptions;
 //! use std::collections::HashMap;
 //!
-//! # async fn example() -> chalk_rs::error::Result<()> {
+//! # async fn example() -> chalk_client::error::Result<()> {
 //! let client = ChalkClient::new()
 //!     .client_id("your-client-id")
 //!     .client_secret("your-client-secret")

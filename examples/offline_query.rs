@@ -5,12 +5,12 @@
 //! cargo run --example offline_query
 //! ```
 
-use chalk_rs::ChalkClient;
-use chalk_rs::offline::OfflineQueryParams;
+use chalk_client::ChalkClient;
+use chalk_client::offline::OfflineQueryParams;
 use std::time::Duration;
 
 #[tokio::main]
-async fn main() -> chalk_rs::error::Result<()> {
+async fn main() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new().build().await?;
 
     println!("Environment: {}", client.environment_id());

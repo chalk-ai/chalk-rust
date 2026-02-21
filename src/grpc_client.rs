@@ -31,11 +31,11 @@ const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 /// # Example
 ///
 /// ```rust,no_run
-/// use chalk_rs::ChalkGrpcClient;
-/// use chalk_rs::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
+/// use chalk_client::ChalkGrpcClient;
+/// use chalk_client::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
 /// use std::collections::HashMap;
 ///
-/// # async fn example() -> chalk_rs::error::Result<()> {
+/// # async fn example() -> chalk_client::error::Result<()> {
 /// let client = ChalkGrpcClient::new()
 ///     .client_id("your-client-id")
 ///     .client_secret("your-client-secret")
@@ -51,7 +51,7 @@ const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 ///         },
 ///     )]),
 ///     outputs: vec![OutputExpr {
-///         expr: Some(chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
+///         expr: Some(chalk_client::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
 ///             "user.name".to_string(),
 ///         )),
 ///     }],
