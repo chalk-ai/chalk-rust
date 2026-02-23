@@ -10,9 +10,9 @@
 //! builder but also performs the initial token exchange:
 //!
 //! ```rust,no_run
-//! use chalk_rs::ChalkClient;
+//! use chalk_client::ChalkClient;
 //!
-//! # async fn example() -> chalk_rs::error::Result<()> {
+//! # async fn example() -> chalk_client::error::Result<()> {
 //! let client = ChalkClient::new()
 //!     .client_id("my-client-id")
 //!     .client_secret("my-secret")
@@ -335,8 +335,8 @@ impl ChalkClient {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use chalk_rs::{ChalkClient, OfflineQueryParams};
-    /// # async fn example(client: &ChalkClient) -> chalk_rs::error::Result<()> {
+    /// # use chalk_client::{ChalkClient, OfflineQueryParams};
+    /// # async fn example(client: &ChalkClient) -> chalk_client::error::Result<()> {
     /// let response = client.offline_query(
     ///     OfflineQueryParams::new()
     ///         .with_input("user.id", vec![serde_json::json!(1), serde_json::json!(2)])
@@ -619,9 +619,9 @@ impl ChalkClient {
     /// # Example
     ///
     /// ```rust,no_run
-    /// # use chalk_rs::ChalkClient;
+    /// # use chalk_client::ChalkClient;
     /// # use std::collections::HashMap;
-    /// # async fn example(client: &ChalkClient) -> chalk_rs::error::Result<()> {
+    /// # async fn example(client: &ChalkClient) -> chalk_client::error::Result<()> {
     /// let inputs = HashMap::from([
     ///     ("user.id".to_string(), vec![serde_json::json!(1), serde_json::json!(2)]),
     ///     ("user.name".to_string(), vec![serde_json::json!("Alice"), serde_json::json!("Bob")]),

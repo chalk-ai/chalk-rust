@@ -7,11 +7,11 @@
 //! cargo run --example integration_test
 //! ```
 
-use chalk_rs::gen::chalk::common::v1::{
+use chalk_client::gen::chalk::common::v1::{
     OnlineQueryBulkRequest, OnlineQueryRequest, OutputExpr, UploadFeaturesBulkRequest,
 };
-use chalk_rs::types::QueryOptions;
-use chalk_rs::{ChalkClient, ChalkGrpcClient, OfflineQueryParams};
+use chalk_client::types::QueryOptions;
+use chalk_client::{ChalkClient, ChalkGrpcClient, OfflineQueryParams};
 use std::collections::HashMap;
 use std::process::Command;
 use std::time::Duration;
@@ -236,7 +236,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let grpc_bulk_response = grpc_client
         .query_bulk_proto(OnlineQueryBulkRequest {
             inputs: Some(
-                chalk_rs::gen::chalk::common::v1::online_query_bulk_request::Inputs::InputsFeather(
+                chalk_client::gen::chalk::common::v1::online_query_bulk_request::Inputs::InputsFeather(
                     grpc_bulk_feather,
                 ),
             ),
@@ -291,7 +291,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn output_expr(fqn: &str) -> OutputExpr {
     OutputExpr {
         expr: Some(
-            chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(fqn.to_string()),
+            chalk_client::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(fqn.to_string()),
         ),
     }
 }
@@ -309,7 +309,7 @@ fn serialize_to_feather(batch: &RecordBatch) -> Result<Vec<u8>, Box<dyn std::err
 async fn retry_grpc(
     client: &ChalkGrpcClient,
     request: OnlineQueryRequest,
-) -> Result<chalk_rs::gen::chalk::common::v1::OnlineQueryResponse, Box<dyn std::error::Error>> {
+) -> Result<chalk_client::gen::chalk::common::v1::OnlineQueryResponse, Box<dyn std::error::Error>> {
     let mut last_err = None;
     for attempt in 0..3 {
         match client.query_proto(request.clone()).await {

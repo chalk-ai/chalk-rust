@@ -28,6 +28,6 @@ Run an example: `cargo run --example online_query`
 
 ## Notes
 
-- The crate is published as `chalk-rs` on crates.io
+- The crate is published as `chalk-client` on crates.io
 - Proto files are vendored in `protos/` and generated code is committed in `src/gen/`
 - To regenerate proto code: `./generate.sh` (requires `protoc` on PATH)

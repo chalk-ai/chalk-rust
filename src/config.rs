@@ -54,7 +54,7 @@ pub struct ChalkClientConfig {
 /// ## Example
 ///
 /// ```rust,no_run
-/// use chalk_rs::config::ChalkClientConfigBuilder;
+/// use chalk_client::config::ChalkClientConfigBuilder;
 ///
 /// let config = ChalkClientConfigBuilder::new()
 ///     .client_id("my-client-id")

@@ -1,5 +1,5 @@
-[![Crates.io](https://img.shields.io/crates/v/chalk-rs.svg)](https://crates.io/crates/chalk-rs)
-[![Documentation](https://docs.rs/chalk-rs/badge.svg)](https://docs.rs/chalk-rs)
+[![Crates.io](https://img.shields.io/crates/v/chalk-client.svg)](https://crates.io/crates/chalk-client)
+[![Documentation](https://docs.rs/chalk-client/badge.svg)](https://docs.rs/chalk-client)
 [![Test](https://github.com/chalk-ai/chalk-rust/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/chalk-ai/chalk-rust/actions/workflows/test.yml)
 
 # Rust Chalk
@@ -8,17 +8,17 @@ The official [Chalk](https://chalk.ai) client library for Rust.
 
 ## Installation
 
-Add `chalk-rs` to your `Cargo.toml`:
+Add `chalk-client` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chalk-rs = "0.1"
+chalk-client = "0.1"
 ```
 
 Or install via the command line:
 
 ```sh
-cargo add chalk-rs
+cargo add chalk-client
 ```
 
 ## Connect to Chalk
@@ -28,9 +28,9 @@ configuration from the first available source in this order:
 
 1. **Explicit values** passed to the builder:
     ```rust,no_run
-    use chalk_rs::ChalkClient;
+    use chalk_client::ChalkClient;
 
-    # async fn example() -> chalk_rs::error::Result<()> {
+    # async fn example() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new()
         .client_id("your-client-id")
         .client_secret("your-client-secret")
@@ -45,9 +45,9 @@ configuration from the first available source in this order:
 2. **Environment variables**: `CHALK_CLIENT_ID`, `CHALK_CLIENT_SECRET`,
    `CHALK_API_SERVER`, `CHALK_ACTIVE_ENVIRONMENT`:
     ```rust,no_run
-    use chalk_rs::ChalkClient;
+    use chalk_client::ChalkClient;
 
-    # async fn example() -> chalk_rs::error::Result<()> {
+    # async fn example() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new().build().await?;
     # Ok(())
     # }
@@ -60,11 +60,11 @@ configuration from the first available source in this order:
 Query features for a single entity using JSON request/response:
 
 ```rust,no_run
-use chalk_rs::ChalkClient;
-use chalk_rs::types::QueryOptions;
+use chalk_client::ChalkClient;
+use chalk_client::types::QueryOptions;
 use std::collections::HashMap;
 
-# async fn example() -> chalk_rs::error::Result<()> {
+# async fn example() -> chalk_client::error::Result<()> {
 let client = ChalkClient::new().build().await?;
 
 let inputs = HashMap::from([
@@ -86,14 +86,14 @@ for feature in &response.data {
 Query features for multiple entities using the Arrow IPC (feather) protocol:
 
 ```rust,no_run
-use chalk_rs::ChalkClient;
-use chalk_rs::types::QueryOptions;
+use chalk_client::ChalkClient;
+use chalk_client::types::QueryOptions;
 use arrow::array::Int64Array;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use std::sync::Arc;
 
-# async fn example() -> chalk_rs::error::Result<()> {
+# async fn example() -> chalk_client::error::Result<()> {
 let client = ChalkClient::new().build().await?;
 
 let schema = Arc::new(Schema::new(vec![
@@ -118,10 +118,10 @@ println!("scalar_data: {} bytes", result.scalar_data.len());
 Run offline (historical) queries that produce datasets:
 
 ```rust,no_run
-use chalk_rs::{ChalkClient, OfflineQueryParams};
+use chalk_client::{ChalkClient, OfflineQueryParams};
 use std::time::Duration;
 
-# async fn example() -> chalk_rs::error::Result<()> {
+# async fn example() -> chalk_client::error::Result<()> {
 let client = ChalkClient::new().build().await?;
 
 let params = OfflineQueryParams::new()
@@ -151,10 +151,10 @@ for url in &urls {
 Push pre-computed feature values into the Chalk feature store:
 
 ```rust,no_run
-use chalk_rs::ChalkClient;
+use chalk_client::ChalkClient;
 use std::collections::HashMap;
 
-# async fn example() -> chalk_rs::error::Result<()> {
+# async fn example() -> chalk_client::error::Result<()> {
 let client = ChalkClient::new().build().await?;
 
 let inputs = HashMap::from([
@@ -179,11 +179,11 @@ The gRPC client supports `query`, `query_bulk`, and `upload_features`. Offline
 queries are only available via the REST client.
 
 ```rust,no_run
-use chalk_rs::ChalkGrpcClient;
-use chalk_rs::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
+use chalk_client::ChalkGrpcClient;
+use chalk_client::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
 use std::collections::HashMap;
 
-# async fn example() -> chalk_rs::error::Result<()> {
+# async fn example() -> chalk_client::error::Result<()> {
 let client = ChalkGrpcClient::new()
     .build()
     .await?;
@@ -196,7 +196,7 @@ let request = OnlineQueryRequest {
         },
     )]),
     outputs: vec![OutputExpr {
-        expr: Some(chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
+        expr: Some(chalk_client::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
             "user.name".to_string(),
         )),
     }],
@@ -215,10 +215,10 @@ if let Some(data) = &response.data {
 
 ## Error Handling
 
-All methods return `chalk_rs::error::Result<T>`, which uses `ChalkClientError`:
+All methods return `chalk_client::error::Result<T>`, which uses `ChalkClientError`:
 
 ```rust,no_run
-use chalk_rs::error::ChalkClientError;
+use chalk_client::error::ChalkClientError;
 
 # fn example(err: ChalkClientError) {
 match err {

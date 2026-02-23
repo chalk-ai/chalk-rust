@@ -5,12 +5,12 @@
 //! cargo run --example grpc_query
 //! ```
 
-use chalk_rs::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
-use chalk_rs::ChalkGrpcClient;
+use chalk_client::gen::chalk::common::v1::{OnlineQueryRequest, OutputExpr};
+use chalk_client::ChalkGrpcClient;
 use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> chalk_rs::error::Result<()> {
+async fn main() -> chalk_client::error::Result<()> {
     let client = ChalkGrpcClient::new().build().await?;
     println!("Connected to environment: {}", client.environment_id());
 
@@ -23,12 +23,12 @@ async fn main() -> chalk_rs::error::Result<()> {
         )]),
         outputs: vec![
             OutputExpr {
-                expr: Some(chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
+                expr: Some(chalk_client::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
                     "user.name".to_string(),
                 )),
             },
             OutputExpr {
-                expr: Some(chalk_rs::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
+                expr: Some(chalk_client::gen::chalk::common::v1::output_expr::Expr::FeatureFqn(
                     "user.age".to_string(),
                 )),
             },

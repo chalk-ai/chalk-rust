@@ -5,7 +5,7 @@
 //! cargo run --example upload_features
 //! ```
 
-use chalk_rs::ChalkClient;
+use chalk_client::ChalkClient;
 
 use arrow::array::{Int64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 #[tokio::main]
-async fn main() -> chalk_rs::error::Result<()> {
+async fn main() -> chalk_client::error::Result<()> {
     let client = ChalkClient::new().build().await?;
 
     println!("Environment: {}", client.environment_id());
