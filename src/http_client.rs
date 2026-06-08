@@ -1239,7 +1239,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("test-id")
             .client_secret("test-secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-123")
             .build()
             .await
@@ -1293,7 +1293,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("test-id")
             .client_secret("test-secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1347,7 +1347,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1411,7 +1411,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1502,7 +1502,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1580,7 +1580,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1661,7 +1661,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1757,7 +1757,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1838,7 +1838,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -1974,7 +1974,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -2038,7 +2038,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await
@@ -2085,7 +2085,7 @@ mod tests {
         let client = ChalkClient::new()
             .client_id("id")
             .client_secret("secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .build()
             .await

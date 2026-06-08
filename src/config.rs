@@ -47,6 +47,16 @@ pub struct ChalkClientConfig {
 
     /// Override for the query server URL.
     pub query_server: Option<String>,
+
+    /// Maximum size, in bytes, of a gRPC *response* the client will decode.
+    /// `None` keeps tonic's default of 4 MiB. Raise this when bulk queries
+    /// return responses larger than the default (otherwise the call fails
+    /// with a gRPC `OutOfRange` error).
+    pub max_decoding_message_size: Option<usize>,
+
+    /// Maximum size, in bytes, of a gRPC *request* the client will encode and
+    /// send. `None` keeps tonic's default (unlimited).
+    pub max_encoding_message_size: Option<usize>,
 }
 
 /// A builder for [`ChalkClientConfig`].
@@ -72,6 +82,8 @@ pub struct ChalkClientConfigBuilder {
     branch_id: Option<String>,
     deployment_tag: Option<String>,
     query_server: Option<String>,
+    max_decoding_message_size: Option<usize>,
+    max_encoding_message_size: Option<usize>,
 }
 
 impl ChalkClientConfigBuilder {
@@ -119,6 +131,23 @@ impl ChalkClientConfigBuilder {
     /// Set the query server URL directly (skips engine-map resolution).
     pub fn query_server(mut self, url: impl Into<String>) -> Self {
         self.query_server = Some(url.into());
+        self
+    }
+
+    /// Set the maximum size, in bytes, of a gRPC response the client will
+    /// accept and decode. Defaults to tonic's 4 MiB limit when unset.
+    ///
+    /// Raise this when bulk queries return responses larger than 4 MiB,
+    /// which otherwise fail with a gRPC `OutOfRange` error.
+    pub fn max_decoding_message_size(mut self, bytes: usize) -> Self {
+        self.max_decoding_message_size = Some(bytes);
+        self
+    }
+
+    /// Set the maximum size, in bytes, of a gRPC request the client will
+    /// encode and send. Defaults to unlimited when unset.
+    pub fn max_encoding_message_size(mut self, bytes: usize) -> Self {
+        self.max_encoding_message_size = Some(bytes);
         self
     }
 
@@ -187,6 +216,14 @@ impl ChalkClientConfigBuilder {
             .or_else(|| get_env("CHALK_QUERY_SERVER"))
             .or_else(|| get_env("_CHALK_QUERY_SERVER"));
 
+        let max_decoding_message_size = self
+            .max_decoding_message_size
+            .or_else(|| get_env_usize("CHALK_MAX_DECODING_MESSAGE_SIZE"));
+
+        let max_encoding_message_size = self
+            .max_encoding_message_size
+            .or_else(|| get_env_usize("CHALK_MAX_ENCODING_MESSAGE_SIZE"));
+
         Ok(ChalkClientConfig {
             client_id,
             client_secret,
@@ -195,6 +232,8 @@ impl ChalkClientConfigBuilder {
             branch_id,
             deployment_tag,
             query_server,
+            max_decoding_message_size,
+            max_encoding_message_size,
         })
     }
 }
@@ -202,6 +241,12 @@ impl ChalkClientConfigBuilder {
 /// Read an environment variable, returning `None` if it's unset or empty.
 fn get_env(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|v| !v.is_empty())
+}
+
+/// Read an environment variable and parse it as a byte count (`usize`),
+/// returning `None` if it's unset, empty, or not a valid non-negative number.
+fn get_env_usize(key: &str) -> Option<usize> {
+    get_env(key).and_then(|v| v.parse::<usize>().ok())
 }
 
 /// The top-level structure of `~/.chalk.yml`.
@@ -338,6 +383,8 @@ mod tests {
         "_CHALK_DEPLOYMENT_TAG",
         "CHALK_QUERY_SERVER",
         "_CHALK_QUERY_SERVER",
+        "CHALK_MAX_DECODING_MESSAGE_SIZE",
+        "CHALK_MAX_ENCODING_MESSAGE_SIZE",
     ];
 
     fn clear_chalk_env() {
@@ -356,6 +403,8 @@ mod tests {
             .branch_id("branch-1")
             .deployment_tag("canary")
             .query_server("https://query.chalk.ai")
+            .max_decoding_message_size(100 * 1024 * 1024)
+            .max_encoding_message_size(50 * 1024 * 1024)
             .build()
             .unwrap();
 
@@ -369,6 +418,42 @@ mod tests {
             config.query_server.as_deref(),
             Some("https://query.chalk.ai")
         );
+        assert_eq!(config.max_decoding_message_size, Some(100 * 1024 * 1024));
+        assert_eq!(config.max_encoding_message_size, Some(50 * 1024 * 1024));
+    }
+
+    #[test]
+    fn test_max_message_size_from_env() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        clear_chalk_env();
+
+        std::env::set_var("CHALK_CLIENT_ID", "id");
+        std::env::set_var("CHALK_CLIENT_SECRET", "secret");
+        // 100 MiB, expressed in bytes.
+        std::env::set_var("CHALK_MAX_DECODING_MESSAGE_SIZE", "104857600");
+
+        let config = ChalkClientConfigBuilder::new().build().unwrap();
+        assert_eq!(config.max_decoding_message_size, Some(104857600));
+        // Unset env var stays None (tonic default applies).
+        assert_eq!(config.max_encoding_message_size, None);
+
+        clear_chalk_env();
+    }
+
+    #[test]
+    fn test_invalid_max_message_size_env_is_ignored() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        clear_chalk_env();
+
+        std::env::set_var("CHALK_CLIENT_ID", "id");
+        std::env::set_var("CHALK_CLIENT_SECRET", "secret");
+        std::env::set_var("CHALK_MAX_DECODING_MESSAGE_SIZE", "not-a-number");
+
+        // A garbage value parses to None rather than panicking.
+        let config = ChalkClientConfigBuilder::new().build().unwrap();
+        assert_eq!(config.max_decoding_message_size, None);
+
+        clear_chalk_env();
     }
 
     #[test]
