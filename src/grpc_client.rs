@@ -132,6 +132,22 @@ impl ChalkGrpcClientBuilder {
         self
     }
 
+    /// Set the maximum size, in bytes, of a gRPC response the client will
+    /// decode. Defaults to tonic's 4 MiB limit. Raise this if bulk queries
+    /// return responses larger than 4 MiB (which otherwise fail with a gRPC
+    /// `OutOfRange` error).
+    pub fn max_decoding_message_size(mut self, bytes: usize) -> Self {
+        self.config_builder = self.config_builder.max_decoding_message_size(bytes);
+        self
+    }
+
+    /// Set the maximum size, in bytes, of a gRPC request the client will
+    /// encode and send. Defaults to unlimited.
+    pub fn max_encoding_message_size(mut self, bytes: usize) -> Self {
+        self.config_builder = self.config_builder.max_encoding_message_size(bytes);
+        self
+    }
+
     /// Build the gRPC client, exchanging credentials for a token and
     /// establishing an HTTP/2 connection to the query engine.
     pub async fn build(self) -> Result<ChalkGrpcClient> {
@@ -179,7 +195,13 @@ impl ChalkGrpcClientBuilder {
 
         let channel = endpoint.connect().await?;
 
-        let grpc_client = QueryServiceClient::new(channel);
+        let mut grpc_client = QueryServiceClient::new(channel);
+        if let Some(limit) = config.max_decoding_message_size {
+            grpc_client = grpc_client.max_decoding_message_size(limit);
+        }
+        if let Some(limit) = config.max_encoding_message_size {
+            grpc_client = grpc_client.max_encoding_message_size(limit);
+        }
 
         tracing::info!("ChalkGrpcClient connected to {}", grpc_url);
 
@@ -333,7 +355,7 @@ mod tests {
         let config = ChalkClientConfigBuilder::new()
             .client_id("grpc-test-id")
             .client_secret("grpc-test-secret")
-            .api_server(&server.url())
+            .api_server(server.url())
             .environment("env-1")
             .branch_id("branch-42")
             .deployment_tag("canary")
