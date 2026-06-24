@@ -4,8 +4,18 @@ package chalk.common.v1;
 
 import "chalk/common/v1/chalk_error.proto";
 
+message UploadFeaturesOptions {
+  // Whether to update materialized aggregations (streaming aggs). Defaults to false when not set.
+  optional bool update_mataggs = 1;
+  // Whether to write features to the offline store. Defaults to false when not set.
+  optional bool write_offline = 2;
+  // Whether to write features to the online store. Defaults to true when not set.
+  optional bool write_online = 3;
+}
+
 message UploadFeaturesRequest {
   bytes inputs_table = 1;
+  UploadFeaturesOptions options = 2;
 }
 
 message UploadFeaturesResponse {

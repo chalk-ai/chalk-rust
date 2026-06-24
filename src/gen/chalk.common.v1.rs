@@ -487,10 +487,24 @@ impl FeatherBodyType {
         }
     }
 }
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct UploadFeaturesOptions {
+    /// Whether to update materialized aggregations (streaming aggs). Defaults to false when not set.
+    #[prost(bool, optional, tag = "1")]
+    pub update_mataggs: ::core::option::Option<bool>,
+    /// Whether to write features to the offline store. Defaults to false when not set.
+    #[prost(bool, optional, tag = "2")]
+    pub write_offline: ::core::option::Option<bool>,
+    /// Whether to write features to the online store. Defaults to true when not set.
+    #[prost(bool, optional, tag = "3")]
+    pub write_online: ::core::option::Option<bool>,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UploadFeaturesRequest {
     #[prost(bytes = "vec", tag = "1")]
     pub inputs_table: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub options: ::core::option::Option<UploadFeaturesOptions>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct UploadFeaturesResponse {

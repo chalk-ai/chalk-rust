@@ -12,8 +12,13 @@ use crate::gen::chalk::common::v1::{
     OnlineQueryResponse as ProtoOnlineQueryResponse,
     UploadFeaturesBulkRequest as ProtoUploadFeaturesBulkRequest,
     UploadFeaturesBulkResponse as ProtoUploadFeaturesBulkResponse,
+    UploadFeaturesOptions as ProtoUploadFeaturesOptions,
+    UploadFeaturesRequest as ProtoUploadFeaturesRequest,
+    UploadFeaturesResponse as ProtoUploadFeaturesResponse,
 };
 use crate::gen::chalk::engine::v1::query_service_client::QueryServiceClient;
+use crate::http_client::serialize_record_batch_to_feather;
+use arrow::array::RecordBatch;
 
 const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 
@@ -24,9 +29,11 @@ const USER_AGENT: &str = "chalk-rust-grpc/0.1.0";
 /// latency and higher throughput.
 ///
 /// Supports [`query_proto`](Self::query_proto), [`query_bulk_proto`](Self::query_bulk_proto),
-/// and [`upload_features_proto`](Self::upload_features_proto). These are
-/// low-level methods that accept raw protobuf types. Offline queries are
-/// only available via the REST client.
+/// [`upload_features`](Self::upload_features),
+/// [`upload_features_proto`](Self::upload_features_proto), and
+/// [`upload_features_bulk_proto`](Self::upload_features_bulk_proto). The
+/// `*_proto` methods are low-level and accept raw protobuf types. Offline
+/// queries are only available via the REST client.
 ///
 /// # Example
 ///
@@ -247,9 +254,117 @@ impl ChalkGrpcClient {
         Ok(response.into_inner())
     }
 
-    /// Low-level: uploads pre-computed feature values using the raw protobuf
-    /// request/response types.
+    /// Uploads pre-computed feature values to the **online store**.
+    ///
+    /// Each column of `features` is a feature, with the column name being the
+    /// feature's FQN (for example `"user.age"`); each row is one entity. The
+    /// whole `RecordBatch` is sent in a single request, so this is suitable for
+    /// bulk uploads.
+    ///
+    /// Unlike [`upload_features_bulk_proto`](Self::upload_features_bulk_proto)
+    /// — which targets the offline store — this persists values to the online
+    /// store via the `UploadFeatures` RPC.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use chalk_client::ChalkGrpcClient;
+    /// # use arrow::array::{Int64Array, RecordBatch, StringArray};
+    /// # use arrow::datatypes::{DataType, Field, Schema};
+    /// # use std::sync::Arc;
+    /// # async fn example(client: &ChalkGrpcClient) -> chalk_client::error::Result<()> {
+    /// let schema = Arc::new(Schema::new(vec![
+    ///     Field::new("user.id", DataType::Int64, false),
+    ///     Field::new("user.name", DataType::Utf8, true),
+    /// ]));
+    /// let batch = RecordBatch::try_new(
+    ///     schema,
+    ///     vec![
+    ///         Arc::new(Int64Array::from(vec![1, 2])),
+    ///         Arc::new(StringArray::from(vec!["Alice", "Bob"])),
+    ///     ],
+    /// )?;
+    /// let response = client.upload_features(&batch).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn upload_features(
+        &self,
+        features: &RecordBatch,
+    ) -> Result<ProtoUploadFeaturesResponse> {
+        self.upload_features_with_options(features, ProtoUploadFeaturesOptions::default())
+            .await
+    }
+
+    /// Uploads pre-computed feature values, controlling which stores receive
+    /// the data via `options`.
+    ///
+    /// [`UploadFeaturesOptions`](ProtoUploadFeaturesOptions) lets you set
+    /// `write_online`, `write_offline`, and `update_mataggs`. When a field is
+    /// left unset (`None`), the server applies its default: `write_online`
+    /// defaults to `true`, `write_offline` and `update_mataggs` default to
+    /// `false`. Passing the default (all-`None`) options is therefore
+    /// equivalent to an online-only upload.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// # use chalk_client::ChalkGrpcClient;
+    /// # use chalk_client::gen::chalk::common::v1::UploadFeaturesOptions;
+    /// # use arrow::array::RecordBatch;
+    /// # async fn example(client: &ChalkGrpcClient, batch: &RecordBatch) -> chalk_client::error::Result<()> {
+    /// // Write to both the online and offline stores.
+    /// let response = client
+    ///     .upload_features_with_options(
+    ///         batch,
+    ///         UploadFeaturesOptions {
+    ///             write_online: Some(true),
+    ///             write_offline: Some(true),
+    ///             ..Default::default()
+    ///         },
+    ///     )
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn upload_features_with_options(
+        &self,
+        features: &RecordBatch,
+        options: ProtoUploadFeaturesOptions,
+    ) -> Result<ProtoUploadFeaturesResponse> {
+        let inputs_table = serialize_record_batch_to_feather(features)?;
+        self.upload_features_proto(ProtoUploadFeaturesRequest {
+            inputs_table,
+            options: Some(options),
+        })
+        .await
+    }
+
+    /// Low-level: uploads pre-computed feature values to the **online store**
+    /// using the raw protobuf request/response types (the `UploadFeatures`
+    /// RPC).
+    ///
+    /// Most callers should prefer [`upload_features`](Self::upload_features),
+    /// which builds the request from an Arrow [`RecordBatch`].
     pub async fn upload_features_proto(
+        &self,
+        request: ProtoUploadFeaturesRequest,
+    ) -> Result<ProtoUploadFeaturesResponse> {
+        let mut client = self.grpc_client.clone();
+        let mut req = tonic::Request::new(request);
+        self.inject_metadata(req.metadata_mut()).await?;
+        let response = client.upload_features(req).await?;
+        Ok(response.into_inner())
+    }
+
+    /// Low-level: uploads pre-computed feature values to the **offline store**
+    /// using the raw protobuf request/response types (the `UploadFeaturesBulk`
+    /// RPC).
+    ///
+    /// Note: the bulk RPC persists values to the offline store. To persist to
+    /// the online store, use [`upload_features`](Self::upload_features) or
+    /// [`upload_features_proto`](Self::upload_features_proto).
+    pub async fn upload_features_bulk_proto(
         &self,
         request: ProtoUploadFeaturesBulkRequest,
     ) -> Result<ProtoUploadFeaturesBulkResponse> {
