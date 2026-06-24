@@ -1128,7 +1128,7 @@ fn build_byte_base_model(
 // Arrow serialization helpers
 // =========================================================================
 
-fn serialize_record_batch_to_feather(batch: &RecordBatch) -> Result<Vec<u8>> {
+pub(crate) fn serialize_record_batch_to_feather(batch: &RecordBatch) -> Result<Vec<u8>> {
     let mut buf = Vec::new();
 
     {
