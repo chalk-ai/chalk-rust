@@ -277,12 +277,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let upload_feather = serialize_to_feather(&upload_batch)?;
     let grpc_upload_response = grpc_client
-        .upload_features_proto(UploadFeaturesBulkRequest {
+        .upload_features_bulk_proto(UploadFeaturesBulkRequest {
             inputs_feather: upload_feather,
             ..Default::default()
         })
         .await?;
-    println!("  errors: {:?}", grpc_upload_response.errors);
+    println!("  bulk (offline) errors: {:?}", grpc_upload_response.errors);
+
+    // Upload the same values to the online store via the non-bulk RPC.
+    let grpc_online_response = grpc_client.upload_features(&upload_batch).await?;
+    println!("  online errors: {:?}", grpc_online_response.errors);
 
     println!("\nAll tests passed!");
     Ok(())
